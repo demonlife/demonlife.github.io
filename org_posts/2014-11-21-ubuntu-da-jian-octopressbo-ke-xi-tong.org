@@ -7,3 +7,259 @@ comments: true
 categories: 
 ---
 #+END_HTML
+
+* 安装rvm
+  curl -sSL https://get.rvm.io | bash -s stable
+** rvm 的使用
+   - 注意： 使用时需要将当前的shell设置为login-shell
+     设置方法是： Edit->profile preferences->Title and Command, 勾选Run commands as a login shell
+   - rvm 的命令
+     #+BEGIN_EXAMPLE
+     rvm info: 查看rvm的信息
+     rvm info <ruby-version>: 查看相应ruby版本下的信息
+     rvm list known: 查看哪些rvm可用的ruby版本     
+     #+END_EXAMPLE
+   - 修改rvm的ruby安装源到国内的淘宝镜像服务器,可以提高下载的速度
+     #+BEGIN_EXAMPLE
+     淘宝镜像服务的地址是： http://ruby.taobao.org/
+     sed -i.bak 's!ftp.ruby-lang.org/pub/ruby!ruby.taobao.org/mirrors/ruby!' $rvm_path/config/db
+     #+END_EXAMPLE
+   - ruby的安装与切换
+     + 列出已知的ruby版本
+       rvm list known
+     + 安装ruby
+       rvm install <ruby-version>,最新的ruby-version可以到ruby的官网查看
+     + 卸载一个已经安装的版本
+       rvm remove <ruby-version>
+     + 查询已经安装的ruby
+       rvm list
+   - gemset的使用
+     一个gemset就是一个目录，是某一个Ruby版本的Gem使用集，通过环境变量配置，
+     使该gemset下的gem命令导入到Shell。
+     gemset是附加在ruby语言版本下面的，例如用ruby-1.9.2建立了一个叫rail192的gemset，当切换到
+     ruby-2.1.5的时候，rail192的gemset并不存在。
+     + 建立gemset
+       rvm use <ruby-version>
+       rvm gemset create <name>
+     + 设定某个gemset为当前环境
+       rvm use <gemset-name>
+     + 列出当前ruby的gemset
+       rvm gemset list
+     + 清空gemset中的gem
+       rvm gemset empty <gemset-name>: 清空某个gemset中的所有gem
+     + 删除一个gemset
+       rvm gemset delete <gemset-name>
+   - 项目自动加载gemset
+     进入到项目目录，建立一个.rvmrc文件，在该文件中可以简单的加一个命令：
+     rvm use <gemset-name>
+     之后，无论当前ruby的设置是什么，只要cd到这个项目的时候，rvm会自动加载相应的<gemset-name>
+   - 删除rvm自身
+     #+BEGIN_EXAMPLE
+     rvm implode
+     在rvm的Troubleshooting(https://rvm.io/support/troubleshooting )页面上有一段脚本
+     
+     #+END_EXAMPLE
+     #+BEGIN_SRC bash
+     #!/bin/bash
+     /usr/bin/sudo rm -rf $HOME/.rvm $HOME/.rvmrc /etc/rvmrc /etc/profile.d/rvm.sh /usr/local/rvm /usr/local/bin/rvm
+     /usr/bin/sudo /usr/sbin/groupdel rvm
+     /bin/echo "RVM is removed. Please check all .bashrc|.bash_profile|.profile|.zshrc for RVM source lines and delete
+     or comment out if this was a Per-User installation."
+     #+END_SRC
+** gem命令的使用
+   #+BEGIN_EXAMPLE
+   RubyGems是随着Ruby一起安装的，当安装好Ruby之后，RubyGems对应的命令gem便可以使用，
+   gem命令用来安装Ruby世界的第三方软件包，这些软件包被称作gems，类似于Wndows下dll文件
+   或Linux下的so文件，但是一个Gem并不是单个文件，而是具有一定目录结构的文件夹。
+   请注意，“gem”既表示RubyGems的命令，又可表示某个Ruby软件包.
+   #+END_EXAMPLE
+   - gem 安装其他软件
+     gem install <Gems-name>
+   - 列出已经安装的软件
+     gem list
+** bundler 的使用
+   #+BEGIN_EXAMPLE
+   bundler主要用于管理Ruby应用程序的依赖关系，并按照此依赖关系安装所需的Gems。
+   当运行bundle install命令来安装Gems时，bundler会使用当前目录下的名为Gemfile的文件来处理依赖关系。
+   一个简单的Gemfile内容：
+     source "http://rubygems.org"
+     gem "nokogiri"
+     gem "rack", "~>1.1"
+     gem "rspec", :require => "spec"
+   解释：
+   文件第1行表明bundler会从http://rubygems.org下载Gems；
+   第2行表明需要名为nokogiri的Gem；
+   第3行表明需要名为rack的Gem，并且版本必须高于1.1；
+   第4行表明rspec依赖于spec， 所以spec将先于rspec安装。
+   #+END_EXAMPLE
+   
+* 安装octopress
+  参见官方的安装步骤： http://octopress.org/docs/setup/
+  #+BEGIN_EXAMPLE
+  git clone git://github.com/imathis/octopress.git <your-name>
+  cd <your-name>
+  gem install bundler
+  bundle install
+  rake install
+  git remote rm origin # 删掉octopress源码下载的地址
+  git remote add origin github_blog_git # 添加github博客地址的
+  git checkout -b blogsrc #新建一个博客源码的分支
+  git add . # 添加所有的文件到版本库中
+  git push origin blogsrc # 推送到github的blogsrc分支中
+  #+END_EXAMPLE
+** 配置octopress
+   #+BEGIN_EXAMPLE
+   修改_config.yml的url, title, subtitle, author, email等信息
+   其中url为在github创建的仓库地址
+   source/_include/custom/head.html和source/_include/head.html存有
+   博客使用的google字体信息，如果访问慢可以删掉。
+   #+END_EXAMPLE
+** 部署到github上
+   - 生成发布文件
+     #+BEGIN_EXAMPLE
+     rake setup_github_pages: 最主要的作用就是创建一个_deploy目录，
+     目录用来存放部署到master分支的内容。期间会要求你输入仓库的url，
+     根据提示，进行输入即可。
+     rake generate: 生成静态html
+     rake deploy: 如果配置好了github地址，会自动推送到github的master， 
+     需要确认Rakefile中的deploy_branch为master分支
+     rake preview: 在推送前可以在本地查看生成的网站内容信息
+     #+END_EXAMPLE
+   - 部署时遇到的问题
+     + Could not find a JavaScript runtime.
+       此时需要安装nodejs，然后将nodejs的执行路径加入到环境变量PATH中
+   - nodejs的安装
+     #+BEGIN_EXAMPLE
+     去nodejs的官网： www.nodejs.org下载最新的nodejs，解压
+     执行./configure --prefix=<nodejs-install-path> 
+     make && make install
+     # 添加nodejs的执行路径到path环境变量中
+     echo 'export PATH="$PATH:<nodejs-install-path>/bin/"' >> ~/.zshrc
+     source ~/.zshrc # 让配置文件立即生效
+     #+END_EXAMPLE
+   - 为了便于随时修改blog的内容的，可以建立一个src分支，用来存放所有
+     博客的源码文件，而master分支则存放由octopress处理生成的结果
+   - 多人协作写博客
+     #+BEGIN_EXAMPLE
+     在另外一台电脑上克隆该版本库
+     执行rake generate
+     执行rake setup_github_pages, 按提示输入github版本库地址
+     之后进入_deploy目录，先git pull一下，会报错，按提示执行
+     git branch --set-upstream-to=origin/master master
+     发布代码： 执行rake deploy     
+     #+END_EXAMPLE
+
+** octopress的个性化修改
+   - 汉化octopress
+     #+BEGIN_EXAMPLE
+     sed -i 's/<h1>Recent Posts</<h1>最新文章</' source/_includes/asides/recent_posts.html
+     sed -i 's/>Blog</>首页</;s/>Archives</>全部文章</;' source/_includes/custom/navigation.html
+     sed -i 's/>Blog Archives</>全部文章</; s/Older</较旧</; s/>Newer/>较新/' source/index.html
+     sed -i 's/Blog Archive/全部文章/' source/blog/archives/index.html 
+     #+END_EXAMPLE
+   - 个性化
+     + 页脚说明
+       修改source/\_includes/custom/footer.html
+       #+BEGIN_EXAMPLE
+       <p>
+       Copyright &copy; date - name -
+       <span class="credit">Powered by 
+       <a href="http://www.gnu.org/software/emacs">Emacs</a> +
+       <a href="http://orgmode.org">Org mode</a> +
+       <a href="http://octopress.org">Octopress</a> +
+       <a href="http://github.com">GitHub</a>
+       </span>
+       </p>
+       #+END_EXAMPLE
+     + 增加标签列表
+       安装category\_list.rb到octopress/plugins/
+       category\_list.rb下载地址以及用法：
+       https://github.com/ctdk/octopress-category-list
+       之后在添加文件source/\_includes/asides/categories.html
+       文件内容是：
+       #+BEGIN_EXAMPLE
+       <section>
+         <h1>标签列表</h1>
+         <ul id="category-list">
+         </ul>
+       </section>
+       #+END_EXAMPLE
+       之后修改\_config.yml中的default\_asides增加asides/categories.html
+     + 增加个人说明
+       添加文件source/\_include/asides/aboutme.html
+       内容如下：
+       #+BEGIN_EXAMPLE
+       <section>
+       <h1>关于我</h1>
+       <p>xxxx</p>
+       </section>
+       #+END_EXAMPLE
+       之后在\_config.yml中的default\_asides增加asides/aboutme.html
+     + 修改导航栏
+       修改文件: source/\_includes/custom/navigation.html
+       可以修改为如下内容：
+       #+BEGIN_EXAMPLE
+       <ul class="main-navigation">
+       <li><a href="/">主页</a></li>
+       <li><a href="/blog/archives">所有文章</a></li>
+       <li><a href="/aboutme">关于我</a></li>
+       </ul>
+       #+END_EXAMPLE
+* 使用org-mode 生成octopress博客
+** 修改emacs配置文件
+   在配置文件中添加如下的内容：
+   - 定义发布函数
+     #+BEGIN_SRC lisp
+     (defun save-then-publish ()
+       (interactive)
+       (save-buffer)
+       (org-save-all-org-buffers)
+       (org-publish-current-project))
+     #+END_SRC
+   - 定义org-mode的工程工作目录
+     #+BEGIN_SRC lisp
+     (setq org-publish-project-alist
+        '(("blog-org" .  (:base-directory "octorpress/path/org_posts/"
+                          :base-extension "org"
+                          :publishing-directory "octorpres/path/_posts/"
+                          :sub-superscript ""
+                          :recursive t
+                          :publishing-function org-publish-org-to-octopress
+                          :headline-levels 4
+                          :html-extension "markdown"
+                          :octopress-extension "markdown"
+                          :body-only t))
+          ("blog-extra" . (:base-directory "octorpress/path/org_posts/"
+                           :publishing-directory "octorpress/path/"
+                           :base-extension "css\\|pdf\\|png\\|jpg\\|gif\\|svg"
+                           :publishing-function org-publish-attachment
+                           :recursive t
+                           :author nil))
+          ("blog" . (:components ("blog-org" "blog-extra")))))
+     #+END_SRC
+   - 修改Rakefile
+     + 查找到 Misc Configs， 修改内容如下：
+       #+BEGIN_EXAMPLE
+       new_post_ext    = "org"  # default new post file extension when using the new_post task
+       new_page_ext    = "org"  # default new page file extension when using the new_page task
+       org_posts_dir   = "org_posts" #新添加的
+       #+END_EXAMPLE
+     + 修改生成文件的初始内容
+       #+BEGIN_EXAMPLE
+       在该文件中查找到rake new_post命令执行的代码，在其post.puts "---" 前添加post.puts "#+BEGIN_HTML"
+       在后一个post.puts "---"添加 post.puts "#+END_HTML"
+       #+END_EXAMPLE
+   - 下载org-octopress.el
+     https://github.com/craftkiller/orgmode-octopress
+     之后修改emacs的配置文件：
+     #+BEGIN_EXAMPLE
+     (add-to-list 'load-path "orgmode-octopress/path")
+     (require 'org-octopress)
+     #+END_EXAMPLE
+   - 使用方法
+     rake "new\_post[title]"
+     mv source/\_posts/xxx.org octorpress/path/org\_posts
+     之后在emacs中执行命令:
+     #+BEGIN_EXAMPLE
+     M-x save-then-publish 
+     #+END_EXAMPLE
