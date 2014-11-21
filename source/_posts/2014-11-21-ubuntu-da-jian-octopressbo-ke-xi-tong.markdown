@@ -1,0 +1,7 @@
+---
+layout: post
+title: "Ubuntu 搭建octopress博客系统"
+date: 2014-11-21 12:32:40 +0800
+comments: true
+categories: 
+---

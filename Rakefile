@@ -24,8 +24,11 @@ deploy_dir      = "_deploy"   # deploy directory (for Github pages deployment)
 stash_dir       = "_stash"    # directory to stash posts for speedy generation
 posts_dir       = "_posts"    # directory for blog files
 themes_dir      = ".themes"   # directory for blog files
-new_post_ext    = "markdown"  # default new post file extension when using the new_post task
-new_page_ext    = "markdown"  # default new page file extension when using the new_page task
+#new_post_ext    = "markdown"  # default new post file extension when using the new_post task
+#new_page_ext    = "markdown"  # default new page file extension when using the new_page task
+new_post_ext    = "org"  # default new post file extension when using the new_post task
+new_page_ext    = "org"  # default new page file extension when using the new_page task
+org_posts_dir   = "org_posts" # org file directory
 server_port     = "4000"      # port for preview server eg. localhost:4000
 
 if (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
@@ -110,6 +113,7 @@ task :new_post, :title do |t, args|
   end
   puts "Creating new post: #{filename}"
   open(filename, 'w') do |post|
+    post.puts "#+BEGIN_HTML"
     post.puts "---"
     post.puts "layout: post"
     post.puts "title: \"#{title.gsub(/&/,'&amp;')}\""
@@ -117,6 +121,7 @@ task :new_post, :title do |t, args|
     post.puts "comments: true"
     post.puts "categories: "
     post.puts "---"
+    post.puts "#+END_HTML"
   end
 end
 
