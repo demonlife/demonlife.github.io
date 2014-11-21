@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: 
+
+Sitemap: http://demonlife.github.io/sitemap.xml 
