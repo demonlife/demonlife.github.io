@@ -20,7 +20,12 @@ categories:
 </li>
 <li><a href="#sec-3">3 访问第三方服务</a>
 <ul>
-<li><a href="#sec-3-1">3.1 upstream的使用</a></li>
+<li><a href="#sec-3-1">3.1 upstream的使用</a>
+<ul>
+<li><a href="#sec-3-1-1">3.1.1 ngx_http_upstream_t</a></li>
+<li><a href="#sec-3-1-2">3.1.2 设置upstream的限制性参数</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -170,6 +175,190 @@ void ngx_log_error_core(ngx_uint_t level, ngx_log_t *log, ngx_err_t err, const c
 
 <p>   ngx_http_request_t结构体中有一个ngx_http_upstream_t的r成员
    启用upstream机制的示意图见P161
+</p>
+</div>
+
+<div id="outline-container-3-1-1" class="outline-4">
+<h4 id="sec-3-1-1">ngx_http_upstream_t</h4>
+<div class="outline-text-4" id="text-3-1-1">
+
+<p>    ngx_http_upstream_t结构体里有些成员仅仅是在upstream模块内部使用
+    的。
+{% codeblock lang:c %}
+    struct ngx_http_upstream_s {
+        ngx_http_upstream_handler_pt     read_event_handler;
+        ngx_http_upstream_handler_pt     write_event_handler;
+     
+        ngx_peer_connection_t            peer;
+     
+        ngx_event_pipe_t                *pipe;
+        
+        // 决定发送什么请求给上游服务器，在实现create_request方法时需要设置它
+        ngx_chain_t                     *request_bufs;
+     
+        ngx_output_chain_ctx_t           output;
+        ngx_chain_writer_ctx_t           writer;
+     
+        // upstream访问时所有限制性参数
+        ngx_http_upstream_conf_t        *conf;
+     
+        ngx_http_upstream_headers_in_t   headers_in;
+        
+        // 通过resolved可以直接指定上游服务器地址
+        ngx_http_upstream_resolved_t    *resolved;
+     
+        ngx_buf_t                        from_client;
+     
+        ngx_buf_t                        buffer;
+        off_t                            length;
+     
+        ngx_chain_t                     *out_bufs;
+        ngx_chain_t                     *busy_bufs;
+        ngx_chain_t                     *free_bufs;
+     
+        ngx_int_t                      (*input_filter_init)(void *data);
+        ngx_int_t                      (*input_filter)(void *data, ssize_t bytes);
+        void                            *input_filter_ctx;
+     
+    #if (NGX_HTTP_CACHE)
+        ngx_int_t                      (*create_key)(ngx_http_request_t *r);
+    #endif
+        // 构造发往上游服务器的请求内容
+        ngx_int_t                      (*create_request)(ngx_http_request_t *r);
+        ngx_int_t                      (*reinit_request)(ngx_http_request_t *r);
+
+        // 收到上游服务器的响应后会回调该方法
+        ngx_int_t                      (*process_header)(ngx_http_request_t *r);
+        void                           (*abort_request)(ngx_http_request_t *r);
+        void                           (*finalize_request)(ngx_http_request_t *r,
+                                             ngx_int_t rc);
+        ngx_int_t                      (*rewrite_redirect)(ngx_http_request_t *r,
+                                             ngx_table_elt_t *h, size_t prefix);
+        ngx_int_t                      (*rewrite_cookie)(ngx_http_request_t *r,
+                                             ngx_table_elt_t *h);
+     
+        ngx_msec_t                       timeout;
+     
+        ngx_http_upstream_state_t       *state;
+     
+        ngx_str_t                        method;
+        ngx_str_t                        schema;
+        ngx_str_t                        uri;
+     
+        ngx_http_cleanup_pt             *cleanup;
+     
+        unsigned                         store:1;
+        unsigned                         cacheable:1;
+        unsigned                         accel:1;
+        unsigned                         ssl:1;
+    #if (NGX_HTTP_CACHE)
+        unsigned                         cache_status:3;
+    #endif
+     
+        unsigned                         buffering:1;
+        unsigned                         keepalive:1;
+        unsigned                         upgrade:1;
+     
+        unsigned                         request_sent:1;
+        unsigned                         header_sent:1;
+    };
+{% endcodeblock %}
+    upstream有3中方法处理上游响应包体的方式，当请求的ngx_http_request_t结构体中
+    subrequest_in_memory标志位为1时，upstream将不转发响应包体到下游，由http模块
+    实现的input_filter方法处理包体，当subrequest_in_memory为0时，upstream会转发
+    响应包体。当ngx_http_upstream_conf_t配置结构体中的buffering标志位为1时，将
+    开启更多的内存和磁盘文件用于缓存上游的响应包体，意味着上游网速更快， 当buffering
+    为0时，将使用固定大小的缓冲区来转发响应包体。
 </p></div>
+
+</div>
+
+<div id="outline-container-3-1-2" class="outline-4">
+<h4 id="sec-3-1-2">设置upstream的限制性参数</h4>
+<div class="outline-text-4" id="text-3-1-2">
+
+
+{% codeblock lang:c %}
+    typedef struct {
+        ngx_http_upstream_srv_conf_t    *upstream;
+
+        // 以下三个超时时间是必须要设置的，应为默认值为0，如果不设置将永远无法与上游服务
+        // 器建立起tcp连接， 可以将ngx_http_upstream_conf_t类型的变量放到ngx_http_mytest_conf_t
+        // 结构体中，之后使用ngx_command_t来设置处理方法。
+        // 连接上游服务器的超时时间，单位为毫秒
+        ngx_msec_t                       connect_timeout;
+        // 发送tcp包到上游服务器的超时时间，毫秒
+        ngx_msec_t                       send_timeout;
+        // 接受tcp包到上游服务器的超时时间，毫秒
+        ngx_msec_t                       read_timeout;
+
+        ngx_msec_t                       timeout;
+     
+        size_t                           send_lowat;
+        size_t                           buffer_size;
+     
+        size_t                           busy_buffers_size;
+        size_t                           max_temp_file_size;
+        size_t                           temp_file_write_size;
+     
+        size_t                           busy_buffers_size_conf;
+        size_t                           max_temp_file_size_conf;
+        size_t                           temp_file_write_size_conf;
+     
+        ngx_bufs_t                       bufs;
+     
+        ngx_uint_t                       ignore_headers;
+        ngx_uint_t                       next_upstream;
+        ngx_uint_t                       store_access;
+        ngx_flag_t                       buffering;
+        ngx_flag_t                       pass_request_headers;
+        ngx_flag_t                       pass_request_body;
+     
+        ngx_flag_t                       ignore_client_abort;
+        ngx_flag_t                       intercept_errors;
+        ngx_flag_t                       cyclic_temp_file;
+     
+        ngx_path_t                      *temp_path;
+     
+        ngx_hash_t                       hide_headers_hash;
+        ngx_array_t                     *hide_headers;
+        ngx_array_t                     *pass_headers;
+     
+        ngx_http_upstream_local_t       *local;
+     
+    #if (NGX_HTTP_CACHE)
+        ngx_shm_zone_t                  *cache;
+     
+        ngx_uint_t                       cache_min_uses;
+        ngx_uint_t                       cache_use_stale;
+        ngx_uint_t                       cache_methods;
+     
+        ngx_flag_t                       cache_lock;
+        ngx_msec_t                       cache_lock_timeout;
+     
+        ngx_flag_t                       cache_revalidate;
+     
+        ngx_array_t                     *cache_valid;
+        ngx_array_t                     *cache_bypass;
+        ngx_array_t                     *no_cache;
+    #endif
+     
+        ngx_array_t                     *store_lengths;
+        ngx_array_t                     *store_values;
+     
+        signed                           store:2;
+        unsigned                         intercept_404:1;
+        unsigned                         change_buffering:1;
+     
+    #if (NGX_HTTP_SSL)
+        ngx_ssl_t                       *ssl;
+        ngx_flag_t                       ssl_session_reuse;
+    #endif
+     
+        ngx_str_t                        module;
+    } ngx_http_upstream_conf_t;
+{% endcodeblock %}
+</div>
+</div>
 </div>
 </div>
