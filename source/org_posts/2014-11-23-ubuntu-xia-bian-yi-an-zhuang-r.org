@@ -1,0 +1,39 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "ubuntu 下编译安装 R"
+date: 2014-11-23 09:21:01 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 使用包管理安装R语言
+** 更新ubuntu的软件源
+   找到R语言的ubuntu的软件源： http://mirror.bjtu.edu.cn/cran/bin/linux/ubuntu/
+   ubuntu 14.04的代号是trusty, 因此需要在source.list文件最后一行添加如下内容：
+   #+BEGIN_EXAMPLE
+   deb http://mirror.bjtu.edu.cn/cran/bin/linux/ubuntu trusty/
+   #+END_EXAMPLE
+   之后更新源： apt-get update
+** 安装指定版本的R
+   #+BEGIN_EXAMPLE
+   sudo apt-get install r-base-core=2.15.3
+   #+END_EXAMPLE
+   
+* 编译安装R
+** R的依赖软件
+   在安装R前，需要先安装如下的依赖软件：
+   #+BEGIN_EXAMPLE
+   sudo aptitude install build-essential gfortran libreadline6-dev libxt-dev
+   #+END_EXAMPLE
+** R源码下载
+   R语言的官方网站是： http://www.r-project.org/
+   可从该网站中下载相应的源码
+** 编译安装
+   开始编译安装R，执行如下命令
+   #+BEGIN_EXAMPLE
+   ./configure --prefix=/which/path/to/install --enable-R-shlib
+   make
+   make install
+   #+END_EXAMPLE
