@@ -1,0 +1,32 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "R 语言的使用笔记"
+date: 2014-11-23 09:51:32 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 安装fortunes
+  fortunes库是一个R语言的语录集，这些都是R语言智慧的精华，让R语言的后辈使用者，可以更了解R语言的本身，了解R的精神。
+** 安装过程如下
+   #+BEGIN_EXAMPLE
+   1. 先启动R， 在命令行中执行R即可
+   2. install.packages("fortunes") # 安装fortunes包
+   3. library(fortunes) #加载fortunes包 
+   4. ?fortunes # 查看帮助
+   #+END_EXAMPLE
+** fortunes包的使用
+   #+BEGIN_EXAMPLE
+   fortune() #随机查看一条语录
+   fortune(108) #指定查看一条记录
+   完整语录的下载地址是： http://cran.r-project.org/web/packages/fortunes/vignettes/fortunes.pdf
+   #+END_EXAMPLE
+* formatR包
+  formatR包是一个实用的包，提供了R代码格式化功能，可以自动设置空格、缩进、换行等代码格式
+** 安装
+   #+BEGIN_EXAMPLE
+   install.packages("formatR") # 3.1.2中已经没有formatR包了
+   library(formatR)
+   #+END_EXAMPLE
