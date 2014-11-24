@@ -11,7 +11,6 @@ categories:
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<<<<<<< HEAD
 <li><a href="#sec-1">1 配置, error日志和请求上下文</a>
 <ul>
 <li><a href="#sec-1-1">1.1 使用http配置</a>
@@ -21,21 +20,23 @@ categories:
 <li><a href="#sec-1-1-3">1.1.3 自定义配置项处理方法</a></li>
 <li><a href="#sec-1-1-4">1.1.4 合并配置项</a></li>
 <li><a href="#sec-1-1-5">1.1.5 http 配置模型</a></li>
-=======
-<li><a href="#sec-1">1 error 日志的用法</a></li>
-<li><a href="#sec-2">2 请求的上下文</a>
-<ul>
-<li><a href="#sec-2-1">2.1 上下文的使用</a></li>
-<li><a href="#sec-2-2">2.2 http框架如何维护上下文结构</a></li>
+<li><a href="#sec-1-1-6">1.1.6 解析http配置的流程</a></li>
+</ul></li>
 </ul>
 </li>
-<li><a href="#sec-3">3 访问第三方服务</a>
+<li><a href="#sec-2">2 error 日志的用法</a></li>
+<li><a href="#sec-3">3 请求的上下文</a>
 <ul>
-<li><a href="#sec-3-1">3.1 upstream的使用</a>
+<li><a href="#sec-3-1">3.1 上下文的使用</a></li>
+<li><a href="#sec-3-2">3.2 http框架如何维护上下文结构</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4 访问第三方服务</a>
 <ul>
-<li><a href="#sec-3-1-1">3.1.1 ngx_http_upstream_t</a></li>
-<li><a href="#sec-3-1-2">3.1.2 设置upstream的限制性参数</a></li>
->>>>>>> 3adcbb664815638e84f50fcdb7edabc91467f81d
+<li><a href="#sec-4-1">4.1 upstream的使用</a>
+<ul>
+<li><a href="#sec-4-1-1">4.1.1 ngx_http_upstream_t</a></li>
+<li><a href="#sec-4-1-2">4.1.2 设置upstream的限制性参数</a></li>
 </ul>
 </li>
 </ul>
@@ -45,7 +46,6 @@ categories:
 </div>
 
 <div id="outline-container-1" class="outline-2">
-<<<<<<< HEAD
 <h2 id="sec-1">配置, error日志和请求上下文</h2>
 <div class="outline-text-2" id="text-1">
 
@@ -149,57 +149,10 @@ create_srv_conf, create_loc_conf方法生成存储main级别配置参数的结�
         return mycf;
     }
 {% endcodeblock %}
-=======
-<h2 id="sec-1">error 日志的用法</h2>
-<div class="outline-text-2" id="text-1">
-
-<p>  nginx的日志模块（此处说的是ngx_errlog_module,而不是ngx_http_log_module
-  ngx_http_log_module模块是用于记录http请求的访问日志的）为其他模块提供了基本
-  的记录日志功能。出于夸平台的考虑，日志模块提供了很多的接口， 主要是因为有些平台
-  不支持可变参数。首先看一下日志模块对于支持可变参数平台而提供的3个接口：
-</p>
-
-
-<pre class="example">#define ngx_log_error(level, log, args...) \
-    if ((log)-&gt;log_level &gt;= level) ngx_log_error_core(level, log, args)
-#define ngx_log_debug(level, log, args...) \
-    if ((log)-&gt;log_level &amp; level)          \
-        ngx_log_error_core(NGX_LOG_DEBUG, log, args)
-void ngx_log_error_core(ngx_uint_t level, ngx_log_t *log, ngx_err_t err, const char* fmt, ...);
-</pre>
-
-<p>
-  上述函数定义中各个参数的说明见P150
-  使用ngx_log_error宏记录日志时，如果传人的level级别&lt;=log参数中的日志级别(通常由nginx.conf配置
-  文件指定),就会输出日志内容，否则这条日志会被忽略。
-  在使用ngx_log_debug宏时，level表达不再是级别，而是日志类型，应为ngx_log_debug宏记录的日志
-  必须是NGX_LOG_DEBUG调试级别的，此处的level由各个子模块定义，level的取值见P151。
-  例如:
-</p>
-
-
-<pre class="example">当http模块调用ngx_log_debug宏时，传人的level参数是NGX_LOG_DEBUG_HTTP,这时如果log参数
-不属于HTTP模块，如使用了event事件模块的log，则不会输出任何日志。
-</pre>
-
-<p>
-  log参数：
-</p>
-
-
-<pre class="example">在开发http模块时，不用关心log参数的构造，在处理请求时ngx_http_request_t结构中的connection
-成员就有一个ngx_log_t类型的log成员，在读取配置阶段,ngx_conf_t 结构也有log成员可以用来记录
-日志，读取配置阶段时的日志信息都将输出到控制台
-</pre>
-
-<p>
-  注意： printf/sprintf支持的一些格式转换在ngx<sub>vslprintf中是不支持，或者意义不同</sub>
->>>>>>> 3adcbb664815638e84f50fcdb7edabc91467f81d
 </p></div>
 
 </div>
 
-<<<<<<< HEAD
 <div id="outline-container-1-1-2" class="outline-4">
 <h4 id="sec-1-1-2">设定配置项的解析方式</h4>
 <div class="outline-text-4" id="text-1-1-2">
@@ -344,10 +297,83 @@ static ngx_command_t ngx_http_mytest_command[] = {
 
 <p>    P140
 </p></div>
-=======
+
+</div>
+
+<div id="outline-container-1-1-6" class="outline-4">
+<h4 id="sec-1-1-6">解析http配置的流程</h4>
+<div class="outline-text-4" id="text-1-1-6">
+
+<p>    P141
+</p>
+
+
+<pre class="example">发现http{}时，启动http框架，http框架会初始化所有http模块的序列号，并创建3个数组用于
+存储所有http模块的create_main_conf, create_srv_conf, create_loc_conf方法返回的指针地址
+并将这3个数组的地址保存到ngx_http_conf_ctx_t结构体中，调用每个http模块的create_main_conf,
+create_srv_conf, create_loc_conf方法，将各http模块上述3个方法返回的地址依次保存到ngx_http_conf_ctx_t
+结构体的3个数组中。调用每个http模块的preconfiguration方法（该方法返回失败，则nginx进程会终止）。
+
+</pre>
+
+</div>
+</div>
+</div>
+
+</div>
+
 <div id="outline-container-2" class="outline-2">
-<h2 id="sec-2">请求的上下文</h2>
+<h2 id="sec-2">error 日志的用法</h2>
 <div class="outline-text-2" id="text-2">
+
+<p>  nginx的日志模块（此处说的是ngx_errlog_module,而不是ngx_http_log_module
+  ngx_http_log_module模块是用于记录http请求的访问日志的）为其他模块提供了基本
+  的记录日志功能。出于夸平台的考虑，日志模块提供了很多的接口， 主要是因为有些平台
+  不支持可变参数。首先看一下日志模块对于支持可变参数平台而提供的3个接口：
+</p>
+
+
+<pre class="example">#define ngx_log_error(level, log, args...) \
+    if ((log)-&gt;log_level &gt;= level) ngx_log_error_core(level, log, args)
+#define ngx_log_debug(level, log, args...) \
+    if ((log)-&gt;log_level &amp; level)          \
+        ngx_log_error_core(NGX_LOG_DEBUG, log, args)
+void ngx_log_error_core(ngx_uint_t level, ngx_log_t *log, ngx_err_t err, const char* fmt, ...);
+</pre>
+
+<p>
+  上述函数定义中各个参数的说明见P150
+  使用ngx_log_error宏记录日志时，如果传人的level级别&lt;=log参数中的日志级别(通常由nginx.conf配置
+  文件指定),就会输出日志内容，否则这条日志会被忽略。
+  在使用ngx_log_debug宏时，level表达不再是级别，而是日志类型，应为ngx_log_debug宏记录的日志
+  必须是NGX_LOG_DEBUG调试级别的，此处的level由各个子模块定义，level的取值见P151。
+  例如:
+</p>
+
+
+<pre class="example">当http模块调用ngx_log_debug宏时，传人的level参数是NGX_LOG_DEBUG_HTTP,这时如果log参数
+不属于HTTP模块，如使用了event事件模块的log，则不会输出任何日志。
+</pre>
+
+<p>
+  log参数：
+</p>
+
+
+<pre class="example">在开发http模块时，不用关心log参数的构造，在处理请求时ngx_http_request_t结构中的connection
+成员就有一个ngx_log_t类型的log成员，在读取配置阶段,ngx_conf_t 结构也有log成员可以用来记录
+日志，读取配置阶段时的日志信息都将输出到控制台
+</pre>
+
+<p>
+  注意： printf/sprintf支持的一些格式转换在ngx<sub>vslprintf中是不支持，或者意义不同</sub>
+</p></div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h2 id="sec-3">请求的上下文</h2>
+<div class="outline-text-2" id="text-3">
 
 <p>  此处的上下文是指http框架为每个http请求所准备的结构体。http框架定义的
   上下文是针对于http请求的，而且一个http请求对应于每一个http模块都可以
@@ -355,9 +381,9 @@ static ngx_command_t ngx_http_mytest_command[] = {
 </p>
 </div>
 
-<div id="outline-container-2-1" class="outline-3">
-<h3 id="sec-2-1">上下文的使用</h3>
-<div class="outline-text-3" id="text-2-1">
+<div id="outline-container-3-1" class="outline-3">
+<h3 id="sec-3-1">上下文的使用</h3>
+<div class="outline-text-3" id="text-3-1">
 
 <p>   有两个宏可以完成上下文的设置和使用：
 {% codeblock lang:c %}
@@ -397,9 +423,9 @@ static ngx_command_t ngx_http_mytest_command[] = {
 
 </div>
 
-<div id="outline-container-2-2" class="outline-3">
-<h3 id="sec-2-2">http框架如何维护上下文结构</h3>
-<div class="outline-text-3" id="text-2-2">
+<div id="outline-container-3-2" class="outline-3">
+<h3 id="sec-3-2">http框架如何维护上下文结构</h3>
+<div class="outline-text-3" id="text-3-2">
 
 <p>   在结构体ngx<sub>http</sub><sub>request</sub><sub>s中有定义：</sub>
 {% codeblock lang:c %}
@@ -416,9 +442,9 @@ static ngx_command_t ngx_http_mytest_command[] = {
 
 </div>
 
-<div id="outline-container-3" class="outline-2">
-<h2 id="sec-3">访问第三方服务</h2>
-<div class="outline-text-2" id="text-3">
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4">访问第三方服务</h2>
+<div class="outline-text-2" id="text-4">
 
 <p>  nginx提供了两种全异步方式来与第三方服务器通信：upstream, subrequest.
   upstream可以保证在与第三方服务器交互时(包括三次握手建立TCP连接，发送
@@ -433,18 +459,18 @@ static ngx_command_t ngx_http_mytest_command[] = {
 </p>
 </div>
 
-<div id="outline-container-3-1" class="outline-3">
-<h3 id="sec-3-1">upstream的使用</h3>
-<div class="outline-text-3" id="text-3-1">
+<div id="outline-container-4-1" class="outline-3">
+<h3 id="sec-4-1">upstream的使用</h3>
+<div class="outline-text-3" id="text-4-1">
 
 <p>   ngx_http_request_t结构体中有一个ngx_http_upstream_t的r成员
    启用upstream机制的示意图见P161
 </p>
 </div>
 
-<div id="outline-container-3-1-1" class="outline-4">
-<h4 id="sec-3-1-1">ngx_http_upstream_t</h4>
-<div class="outline-text-4" id="text-3-1-1">
+<div id="outline-container-4-1-1" class="outline-4">
+<h4 id="sec-4-1-1">ngx_http_upstream_t</h4>
+<div class="outline-text-4" id="text-4-1-1">
 
 <p>    ngx_http_upstream_t结构体里有些成员仅仅是在upstream模块内部使用
     的。
@@ -537,9 +563,9 @@ static ngx_command_t ngx_http_mytest_command[] = {
 
 </div>
 
-<div id="outline-container-3-1-2" class="outline-4">
-<h4 id="sec-3-1-2">设置upstream的限制性参数</h4>
-<div class="outline-text-4" id="text-3-1-2">
+<div id="outline-container-4-1-2" class="outline-4">
+<h4 id="sec-4-1-2">设置upstream的限制性参数</h4>
+<div class="outline-text-4" id="text-4-1-2">
 
 
 {% codeblock lang:c %}
@@ -623,7 +649,6 @@ static ngx_command_t ngx_http_mytest_command[] = {
     } ngx_http_upstream_conf_t;
 {% endcodeblock %}
 </div>
->>>>>>> 3adcbb664815638e84f50fcdb7edabc91467f81d
 </div>
 </div>
 </div>
