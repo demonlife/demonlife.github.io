@@ -14,6 +14,7 @@ categories:
 <li><a href="#sec-1">1 程序参数</a>
 <ul>
 <li><a href="#sec-1-1">1.1 getopt</a></li>
+<li><a href="#sec-1-2">1.2 getopt_long</a></li>
 </ul>
 </li>
 </ul>
@@ -77,5 +78,37 @@ getopt(argc, argv, "if:lr")表示支持-i, -l, -r, -f, 其中-f后要紧跟一�
    时打印错误信息。根据POSIX规范的规定，如果opterr变量是非零值，getopt就会向stderr
    打印一条出错信息。
 </p></div>
+
+</div>
+
+<div id="outline-container-1-2" class="outline-3">
+<h3 id="sec-1-2">getopt_long</h3>
+<div class="outline-text-3" id="text-1-2">
+
+<p>   接受以&ndash;开始的长参数
+</p>
+
+
+<pre class="example">getopt_long比getopt多两个参数，第一个附加参数是一个结构数组，描述了每个长选项
+并告诉getopt_long如何处理他们。第二个附加参数是一个变量指针，可以作为optind的
+长选项版本使用，对于识别的长选项，在长选项数组中的索引就写入该变量。
+长选项数组由一些类型为struct option的结构组成，每一个结构描述了一个长选项的行为
+该数组必须一个包含全0的结构结尾。
+长选项在头文件getopt.h中定义，并且该头文件必须与常量_GNU_SOURCE一同包含进来，
+该常量启用getopt_long功能。
+</pre>
+
+
+
+{% codeblock lang:c %}
+   struct option {
+       const char *name; // 长选项的名字，缩写也可以接受，只要不与其他选项混淆
+       int has_arg; // 该选项是否带参数，0：不带，1：必须有一个参数， 2：有一个可选参数
+       //设置为NULL表示当找到该选项时，返回val里给出的值，否则返回0，并将val的值写入flag指向的变量
+       int *flag; 
+       int val; // getopt_long为该选项返回的值, 相当于短参数
+   }
+{% endcodeblock %}
+</div>
 </div>
 </div>

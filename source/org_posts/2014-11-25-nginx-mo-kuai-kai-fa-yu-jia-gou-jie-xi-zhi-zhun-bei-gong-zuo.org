@@ -1,0 +1,85 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "Nginx 模块开发与架构解析之准备工作"
+date: 2014-11-25 17:33:09 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 准备工作
+** Linux 操作系统
+   需要一个内核为Linux2.6 及以上版本的操作系统，因为Linux2.6及以上内核才支持epoll。
+   而在Linux上使用select或poll来解决事件的多路复用是无法解决高并发压力问题的。
+** 使用Nginx的必备软件
+   + GCC
+     用来编译C语言程序。
+   + PCRE库
+     PCRE(Perl Compatible Regular Expression, perl兼容正则表达式)
+     如果在配置文件中使用了正则表达式，则在编译Nginx时就必须把pcre库编译进Nginx。
+     pcre-devel是pcre做二次开发时需要使用的开发库
+   + zlib库
+     用于对HTTP包的内容做gzip格式的压缩。zlib-devel是做二次开发时需要使用的开发库
+   + openssl 开发库
+     如果需要支持更安全的SSL协议上传输http，就需要openssl库，
+     openssl-devel是做二次开发时需要使用的开发库
+** Linux内核参数的优化
+   最常用的配置修改，修改/etc/sysctl.conf文件，P9
+   #+BEGIN_EXAMPLE
+   #进程可以打开的最大句柄数，该参数直接限制最大并发数
+   fs.file-max = 999999
+
+   #设置为1，允许TIME-WAIT状态的socket重新用于新的TCP连接
+   net.ipv4.tcp_tw_reuse = 1
+
+   #当keepalive启用时，tcp发送keepalive消息的频度，默认2小时，设置的小一些可更快清理无效连接
+   net.ipv4.tcp_keepalive_time = 600
+
+   # 当服务主动关闭连接时，socket保持在FIN-WAIT-2状态的最大时间
+   net.ipv4.tcp_fin_timeout = 30
+
+   # OS允许TIME_WAIT套接字数量的最大值，超过该数，TIME_WAIT套接字将立即被清除并打印警告信息
+   # 默认为 180000，过多的TIME_WAIT套接字会使web服务器变慢
+   net.ipv4.tcp_max_tw_buckets = 5000
+
+   # 在udp和tcp连接中本地端口的取值范围
+   net.ipv4.ip_local_port_range = 1024 61000
+
+   # tcp接受缓存大最小值，默认值，最大值
+   net.ipv4.tcp_rmem = 4096 32768 262142
+
+   # tcp发送缓存的最小值，默认值，最大值
+   net.ipv4.tcp_wmem = 4096 32768 262142
+
+   # 网卡接受的数据包的速度大于内核处理速度时，会有一个队列保存这些包，该参数是设置该包的
+   # 队列的最大值
+   net.core.netdev_max_backlog = 8096
+
+   # 内核套接字接受缓存区默认大小
+   net.core.rmem_default = 262144
+
+   # 内核套接字发送缓存区默认大小
+   net.core.wmem_default = 262144
+
+   # 内核套接字接受缓存区最大大小
+   net.core.rmem_max = 2097152
+
+   # 内核套接字发送缓存区最大大小
+   net.core.wmem_max = 2097152
+   # 以上4个参数的设置需要根据业务特性以及实际情况的硬件成本来综合考虑
+
+   # 与性能无关，用于解决tcp的syn攻击
+   net.ipv4.tcp_syncookies = 1
+
+   # tcp三次握手建立阶段接受SYN请求队列的最大长度，默认为1024，设置的大一些可以使出现繁忙的nginx
+   # 来不及accept新连接时，不至于丢掷客户端发起的连接请求
+   net.ipv4.tcp_max_syn_backlog = 1024
+
+   修改完之后，执行sysctl -p命令，使上述配置失效
+   #+END_EXAMPLE
+   *注意： 滑动窗口的大小与套字节缓冲区会在一定程度上影响并发连接的数目。每个TCP连接都会为
+   维护TCP滑动窗口而消耗内存，这个窗口会根据服务器的处理速度收缩或扩张*
+** configure命令参数(P12)
+   使用 ./configure --help： 查看帮助信息
+** 
