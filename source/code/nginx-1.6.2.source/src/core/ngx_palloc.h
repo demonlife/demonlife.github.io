@@ -32,8 +32,11 @@ typedef void (*ngx_pool_cleanup_pt)(void *data);
 typedef struct ngx_pool_cleanup_s  ngx_pool_cleanup_t;
 
 struct ngx_pool_cleanup_s {
+    // 执行实际清理工作的回调方法
     ngx_pool_cleanup_pt   handler;
+    // handler回到方法需要的参数
     void                 *data;
+    // 下一个ngx_pool_cleanup_t清理对象，如果没有，需设置为NULL
     ngx_pool_cleanup_t   *next;
 };
 

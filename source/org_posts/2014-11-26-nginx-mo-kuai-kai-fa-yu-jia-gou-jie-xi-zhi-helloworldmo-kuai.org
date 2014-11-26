@@ -53,3 +53,22 @@ categories:
       ngx_int_t ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in);
       #+END_SRC
       
+** 将磁盘文件作为包体发送
+   发送磁盘中的文件内容也是使用上面介绍的方法。不同之处在于设置ngx\_buf\_t缓冲区.
+   将其中的in\_file设置为1就表示这次ngx\_buf\_t缓冲区发送的是文件而不是内存.
+   当nginx检测到in\_file为1时， 会从ngx\_buf\_t缓冲区中的file成员处获取实际的文件。
+   file的类型是ngx_file_t.
+   # file:../code/nginx-1.6.2.source/src/core/ngx_core.h::20
+   # file:../code/nginx-1.6.2.source/src/core/ngx_file.h::16
+   nginx简单封装了一个宏用来代替open系统调用,
+   #+BEGIN_SRC c
+   // 对于打开标志位， Nginx也定义了几个宏来加以封装
+   #define ngx_open_file(name, mode, create, access) \
+       open((const char*)name, mode|create, access)
+   #+END_SRC
+   - 清理文件句柄
+     Nginx会异步地将整个文件高效的发送给用户，要求HTTP框架在响应发送完毕后关闭已经
+     打开的文件句柄，否则出现句柄泄露问题。设置清理文件句柄时，需要定义一个ngx\_pool\_cleanup\_t
+     结构体，将得到的文件句柄等信息赋给它，并将nginx提供的ngx_pool_cleanup_file函数设置到它的
+     handler回调方法中即可。
+     # file:../code/nginx-1.6.2.source/src/core/ngx_palloc.h::32
