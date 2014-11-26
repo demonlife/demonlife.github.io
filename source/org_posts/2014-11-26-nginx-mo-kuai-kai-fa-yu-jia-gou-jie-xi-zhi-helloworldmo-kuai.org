@@ -72,3 +72,8 @@ categories:
      结构体，将得到的文件句柄等信息赋给它，并将nginx提供的ngx_pool_cleanup_file函数设置到它的
      handler回调方法中即可。
      # file:../code/nginx-1.6.2.source/src/core/ngx_palloc.h::32
+   - 关闭文件句柄的函数
+     ngx_pool_cleanup_file: 将文件句柄关闭， 需要一个ngx_pool_cleanup_file_t类型的参数
+     在ngx_pool_cleanup_t结构体的data成员上赋值即可。
+     # file:../code/nginx-1.6.2.source/src/core/ngx_palloc.h::71 ngx_pool_cleanup_file_t
+     
