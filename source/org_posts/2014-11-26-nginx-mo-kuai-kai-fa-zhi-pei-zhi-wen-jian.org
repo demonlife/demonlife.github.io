@@ -12,5 +12,53 @@ categories:
   在正式提供服务的产品环境下，部署nginx时都是使用一个master进程来管理多个worker进程
   一般情况下，worker进程的数量与服务器上的cpu核心数相等。
 * Nginx服务的基本配置(P34)
-  
-  
+** 用于调试进程和定位问题的配置项
+   - error日志的设置
+     error_log /path/file level;
+     level是日志的输出级别， 取值范围是debug, info, notice, warn, error, crit,
+     alert,emerg, 从左至右级别依次增大，当设定为一个级别时，大于或等于该级别的日志
+     都会被输出到/path/file文件中，小于该级别的日志则不会输出。
+** 正常运行的配置项
+** 优化性能的配置项
+** 事件类配置项
+** 虚拟主机与请求的分发
+   每一个server块就是一个虚拟主机
+   - location 的匹配规则
+     #+BEGIN_EXAMPLE
+     =: 把URI作为字符串，以便与参数中的uri做完全匹配
+     location = / {
+         # 当只有用户请求是/时， 才会使用该location下的配置
+     }
+     ～: 匹配URI时是字母大小写敏感的
+     ~*: 表示匹配URI时忽略字母大小写问题
+     ^~: 匹配URI时只需要其前半部分与URI参数匹配即可。
+     location ^~ /images/ {
+         # 以/images/ 开始的请求都会匹配上
+     }
+     @: 仅用于Nginx服务内部请求之间的重定向，带有@的location不直接处理用户请求
+     在uri参数里是可以使用正则表达式的
+     location ~* \.(gif|jpg|jpeg)$ {
+     ...
+     }
+     #+END_EXAMPLE
+     location是有顺序的，当一个请求有可能匹配多个location时，实际上这个请求
+     会被第一个location处理。
+** 文件路径的定义
+** 内存及磁盘资源的分配
+** 网络连接的设置
+** MIME类型的设置
+** 对客户端请求的限制
+** 文件操作的优化
+** ngx\_http\_core\_module模块提供的变量
+** upstream配置
+   #+BEGIN_EXAMPLE
+   upsream backend {
+       ip_hash;
+       server ip:port;
+       ...
+   }
+   #+END_EXAMPLE
+   ip_hash 与weight(权重) 配置不可同时使用，如果upstream集群中有一台上游服务器
+   暂时不可用，不能直接删除该配置，而是要down参数标识
+** 反向代理的基本配置
+   

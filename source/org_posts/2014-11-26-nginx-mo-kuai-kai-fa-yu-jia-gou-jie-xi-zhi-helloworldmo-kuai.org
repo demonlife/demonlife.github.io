@@ -1,0 +1,55 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "nginx 模块开发与架构解析之helloworld模块"
+date: 2014-11-26 13:51:52 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* http模块的调用
+  worker进程会在一个for循环语句里反复调用事件模块检测网络事件， 当事件模块检测到
+  某个客户端发起的TCP请求时，会建立tcp连接，成功建立连接后根据nginx.conf文件中的
+  配置交由http框架处理。http框架会试图接受完整的http头部，并在接受到完整的http
+  头部后将请求分发到具体的http模块中处理。
+** nginx使用的数据类型(P72)
+** HTTP模块的数据结构
+*** 处理用户请求
+    在出现mytest配置项时， ngx\_http\_mytest方法会被调用，
+    这时将ngx\_http\_core\_loc\_conf\_t
+    结构的handler成员指定为ngx\_http\_mytest\_handler, 当http框架接受完http请求的头部
+    后，会调用handler指向的方法。
+    - 方法的返回值
+      方法的返回值取值定义在 src/http/ngx\_http\_request.h文件中
+      在ngx_http_mytest_handler的返回值中，如果是正常的HTTP返回码, nginx会按照规范构
+      造合法的响应包发送给用户。当返回的是错误码时，会构造响应错误的返回值。
+      在处理方法中除了返回HTTP响应码外，还可以返回Nginx全局定义的几个错误码。
+      这些错误码对应Nginx自身提供的大部分方法来说都是通用的。
+    - nginx定义的方法名
+      nginx中method的类型是ngx_uint_t，是Nginx忽略大小写等情形时解析完用户请求后得到的
+      方法类型，当需要了解用户请求中的http方法时， 应该使用r->method整型与nginx定义
+      的15个宏进行比较，这样速度是最快的
+    - 获取非RFC2616标准的HTTP头部(P100)
+      需要遍历r->headers_in.headers链表才能获得
+*** 获取http包体
+    ngx_http_read_client_request_body方法是一个异步方法，用于接收http包体
+    包体接收完毕后会回调方法，该方法的原型如下:
+    #+BEGIN_SRC c
+    typedef void (*ngx_http_client_body_handler_pt)(ngx_http_request_t *r);
+    #+END_SRC
+    也可以使用ngx\_http\_discard\_request\_body丢弃包体。
+*** 发送响应
+    请求处理完毕后，需要向用户发送HTTP响应，告知客户端Nginx的执行结果。HTTP响应主要包括
+    响应行，响应头部，包体三部分。发送http响应时需要执行发送HTTP头部和发送HTTP包体两步
+    操作。
+    - 发送http头部
+      #+BEGIN_SRC c
+      ngx_int_T ngx_http_send_header(ngx_http_request_t *r);
+      #+END_SRC
+      向headers链表中添加自定义的HTTP头部(P104)
+    - 将内存中的字符串作为包体发送(P104)
+      #+BEGIN_SRC c
+      ngx_int_t ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in);
+      #+END_SRC
+      
