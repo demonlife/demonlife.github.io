@@ -16,6 +16,10 @@ categories:
 <li><a href="#sec-1-1">1.1 Linux 操作系统</a></li>
 <li><a href="#sec-1-2">1.2 使用Nginx的必备软件</a></li>
 <li><a href="#sec-1-3">1.3 Linux内核参数的优化</a></li>
+<li><a href="#sec-1-4">1.4 configure命令参数(P12)</a></li>
+<li><a href="#sec-1-5">1.5 configure执行流程(P18)</a></li>
+<li><a href="#sec-1-6">1.6 configure生成的文件</a></li>
+<li><a href="#sec-1-7">1.7 nginx的命令行控制</a></li>
 </ul>
 </li>
 </ul>
@@ -45,19 +49,22 @@ categories:
 
 <ul>
 <li>GCC
-     用来编译C语言程序。
+     用来编译C语言程序。 sudo aptitude install build-essential
 </li>
 <li>PCRE库
      PCRE(Perl Compatible Regular Expression, perl兼容正则表达式)
      如果在配置文件中使用了正则表达式，则在编译Nginx时就必须把pcre库编译进Nginx。
      pcre-devel是pcre做二次开发时需要使用的开发库
+     sudo aptitude install libpcre3 libpcre3-dev
 </li>
 <li>zlib库
      用于对HTTP包的内容做gzip格式的压缩。zlib-devel是做二次开发时需要使用的开发库
+     sudo aptitude install zlib1g-dev
 </li>
 <li>openssl 开发库
      如果需要支持更安全的SSL协议上传输http，就需要openssl库，
      openssl-devel是做二次开发时需要使用的开发库
+     sudo aptitude install libssl-dev openssl
 </li>
 </ul>
 
@@ -126,8 +133,111 @@ net.ipv4.tcp_max_syn_backlog = 1024
 </pre>
 
 <p>
-   **注意： 滑动窗口的大小与套字节缓冲区会在一定程度上影响并发连接的数目。每个TCP连接都会为
-   维护TCP滑动窗口而消耗内存，这个窗口会根据服务器的处理速度收缩或扩张**
+   <b>注意： 滑动窗口的大小与套字节缓冲区会在一定程度上影响并发连接的数目。每个TCP连接都会为    维护TCP滑动窗口而消耗内存，这个窗口会根据服务器的处理速度收缩或扩张</b>
 </p></div>
+
+</div>
+
+<div id="outline-container-1-4" class="outline-3">
+<h3 id="sec-1-4">configure命令参数(P12)</h3>
+<div class="outline-text-3" id="text-1-4">
+
+<p>   使用 ./configure &ndash;help： 查看帮助信息
+</p></div>
+
+</div>
+
+<div id="outline-container-1-5" class="outline-3">
+<h3 id="sec-1-5">configure执行流程(P18)</h3>
+<div class="outline-text-3" id="text-1-5">
+
+<p>   configure是由shell脚本编写，中间会调用&lt;nginx-source&gt;/auto/目录下的脚本。
+   在configure中检查某个特性是否存在时，会生成一个最简单的只包含main函数的C程序，该程序会包含
+   相应的头文件，然后通过检查是否可以编译通过来确认特性是否支持。
+</p></div>
+
+</div>
+
+<div id="outline-container-1-6" class="outline-3">
+<h3 id="sec-1-6">configure生成的文件</h3>
+<div class="outline-text-3" id="text-1-6">
+
+<p>   当configure执行成功时会生成objs目录。
+   其中生成的ngx_modules.c是一个非常关键的文件。该文件是用来定义ngx_modules数组的。
+   该数组指明了每个模块在Nginx中的优先级，当一个请求符合同时符合多个模块的处理规则时，将按照
+   他们在ngx_modules数组中的顺序选择最靠前的模块优先处理。对于HTTP过滤模块而言则恰恰相反。
+   ngx_modules中模块执行的先后顺序非常重要，不正确的顺序会导致Nginx无法工作。
+</p></div>
+
+</div>
+
+<div id="outline-container-1-7" class="outline-3">
+<h3 id="sec-1-7">nginx的命令行控制</h3>
+<div class="outline-text-3" id="text-1-7">
+
+<ul>
+<li>直接执行nginx二进制程序
+     &lt;nginx-install-path&gt;/sbin/nginx,此时会读取默认路径下的配置文件
+     &lt;nginx-install-path&gt;/conf/nginx.conf,在没有显示指定nginx.conf配置文件的路径时，
+     将打开在configure命令在执行时使用的&ndash;conf-path=PATH指定的nginx.conf文件。
+     不显示指定&ndash;conf-path=PATH, 则默认是&lt;nginx-install-path&gt;/conf/nginx.conf
+</li>
+<li>指定配置文件启动
+     &lt;ngx-install-path&gt;/sbin/nginx -c conf-path
+</li>
+<li>指定安装目录的启动方法
+     &lt;ngx-install-path&gt;/sbin/nginx -p &lt;ngx-install-path&gt;
+</li>
+<li>指定全局配置项的启动方式
+     使用-g参数可以临时指定一些全局配置项，例如：
+     &lt;ngx-install-path&gt;/sbin/nginx -g "pid /var/nginx/test.pid;"
+     -g参数的约束条件是指定的配置项不能与默认路径下的nginx.conf中的配置项相冲突，否则无法
+     启动，上例中，类似 pid logs/nginx.pid是不能出现在nginx.conf文件中的。
+     以-g方式启动的nginx服务执行其他命令行时，需要把-g参数也带上，否则可能出现不匹配的情况
+</li>
+<li>测试配置信息是否有错误
+     nginx -t
+</li>
+<li>在测试配置阶段不输出信息
+     nginx -t -q, 不把error级别以下的信息输出到屏幕
+</li>
+<li>显示版本信息
+     nginx -v
+</li>
+<li>显示编译阶段参数
+     nginx -V
+</li>
+<li>快速停止服务 
+     nginx -s stop: 等价与直接向该进程发送TERM或INT信号。
+</li>
+<li>“优雅”的停止服务
+     nginx -s quit, 会先关闭监听端口，停止接受新的连接，然后把当前
+     正在处理的连接全部处理完，最后在退出进程。可以直接发送QUIT信号给master进程。
+     停止某个worker进程，可以向该进程发送WINCH信号, kill -s SIGWINCH worker-pid
+</li>
+<li>使运行中的nginx重读配置并生效
+     nginx -s reload, 发送HUP信号达到同样的效果。
+</li>
+<li>日志回滚
+     nginx -s reopen参数可以重新打开日志文件，可以先把当前日志文件改名或者
+     转移到其他目录中进行备份，再重新打开时就会生成新的日志文件。一个简单的脚本可以实现
+     上述操作：
+     mv nginx<sub>log</sub><sub>path</sub> xxx
+     nginx -s reopen
+
+<p>
+     nginx -s reopen命令等价于kill -s SIGUSR1 &lt;nginx-master-pid&gt;
+</p></li>
+<li>平滑升级nginx（测试了一下，有些编译的程序不好使）
+     <a href="http://wiki.nginx.org/ChsCommandLine">http://wiki.nginx.org/ChsCommandLine</a>
+     升级步骤如下：
+     使用新的可执行程序替换旧的（最好做好备份）
+     通知正在运行的旧版本nginx准备升级， kill -s SIGUSR2 nginx-master- pid
+     此时运行中的nginx会将pid文件重命名，启动新的nginx，通过kill向旧版本的
+     master进程发送SIGQUIT信号
+</li>
+</ul>
+
+</div>
 </div>
 </div>

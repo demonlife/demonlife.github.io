@@ -1,0 +1,16 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "nginx 模块开发之配置文件"
+date: 2014-11-26 08:51:53 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 运行中的nginx进程间的关系
+  在正式提供服务的产品环境下，部署nginx时都是使用一个master进程来管理多个worker进程
+  一般情况下，worker进程的数量与服务器上的cpu核心数相等。
+* Nginx服务的基本配置(P34)
+  
+  
