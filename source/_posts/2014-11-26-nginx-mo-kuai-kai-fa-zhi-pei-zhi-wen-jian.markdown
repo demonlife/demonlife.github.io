@@ -20,6 +20,14 @@ categories:
 <li><a href="#sec-2-4">2.4 事件类配置项</a></li>
 <li><a href="#sec-2-5">2.5 虚拟主机与请求的分发</a></li>
 <li><a href="#sec-2-6">2.6 文件路径的定义</a></li>
+<li><a href="#sec-2-7">2.7 内存及磁盘资源的分配</a></li>
+<li><a href="#sec-2-8">2.8 网络连接的设置</a></li>
+<li><a href="#sec-2-9">2.9 MIME类型的设置</a></li>
+<li><a href="#sec-2-10">2.10 对客户端请求的限制</a></li>
+<li><a href="#sec-2-11">2.11 文件操作的优化</a></li>
+<li><a href="#sec-2-12">2.12 ngx_http_core_module模块提供的变量</a></li>
+<li><a href="#sec-2-13">2.13 upstream配置</a></li>
+<li><a href="#sec-2-14">2.14 反向代理的基本配置</a></li>
 </ul>
 </li>
 </ul>
@@ -125,6 +133,82 @@ location ~* \.(gif|jpg|jpeg)$ {
 <h3 id="sec-2-6">文件路径的定义</h3>
 <div class="outline-text-3" id="text-2-6">
 
+</div>
+
+</div>
+
+<div id="outline-container-2-7" class="outline-3">
+<h3 id="sec-2-7">内存及磁盘资源的分配</h3>
+<div class="outline-text-3" id="text-2-7">
+
+</div>
+
+</div>
+
+<div id="outline-container-2-8" class="outline-3">
+<h3 id="sec-2-8">网络连接的设置</h3>
+<div class="outline-text-3" id="text-2-8">
+
+</div>
+
+</div>
+
+<div id="outline-container-2-9" class="outline-3">
+<h3 id="sec-2-9">MIME类型的设置</h3>
+<div class="outline-text-3" id="text-2-9">
+
+</div>
+
+</div>
+
+<div id="outline-container-2-10" class="outline-3">
+<h3 id="sec-2-10">对客户端请求的限制</h3>
+<div class="outline-text-3" id="text-2-10">
+
+</div>
+
+</div>
+
+<div id="outline-container-2-11" class="outline-3">
+<h3 id="sec-2-11">文件操作的优化</h3>
+<div class="outline-text-3" id="text-2-11">
+
+</div>
+
+</div>
+
+<div id="outline-container-2-12" class="outline-3">
+<h3 id="sec-2-12">ngx_http_core_module模块提供的变量</h3>
+<div class="outline-text-3" id="text-2-12">
+
+</div>
+
+</div>
+
+<div id="outline-container-2-13" class="outline-3">
+<h3 id="sec-2-13">upstream配置</h3>
+<div class="outline-text-3" id="text-2-13">
+
+
+
+
+<pre class="example">upsream backend {
+    ip_hash;
+    server ip:port;
+    ...
+}
+</pre>
+
+<p>
+   ip<sub>hash</sub> 与weight(权重) 配置不可同时使用，如果upstream集群中有一台上游服务器
+   暂时不可用，不能直接删除该配置，而是要down参数标识
+</p></div>
+
+</div>
+
+<div id="outline-container-2-14" class="outline-3">
+<h3 id="sec-2-14">反向代理的基本配置</h3>
+<div class="outline-text-3" id="text-2-14">
 
 
 </div>

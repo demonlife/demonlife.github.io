@@ -1,0 +1,163 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "Mongo 权威指南读书笔记"
+date: 2014-11-27 15:03:05 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 基本概念
+  - 纵向扩展
+    使用计算能力更强的机器
+  - 横向扩展
+    通过分区将数据分散到更多的机器上
+* 基础知识
+** 文档
+   文档是键值对的一个有序集合，非常类似于关系型数据库中的行。
+   每一个文档都有一个特殊的键"_id", 这个键在文档所属的集合中是唯一的。
+   文档的键是字符串，并且区分大小写，除少数例外的情况，键可以使用任意UTF-8字符，例外情况如下：
+   #+BEGIN_EXAMPLE
+   1. 键不能含有\0(空字符)，该值用于表示键的结尾
+   2. .(点)和$都有特殊意义，只能在特定环境中使用
+   #+END_EXAMPLE
+   文档中不能有重复的键，并且键/值对是有序的，通常字段顺序不重要，无须让数据库模式依赖特定的
+   字段顺序，但某些情况下，字段顺序变得很重要。
+** 集合
+   可以看做是一个拥有动态模式的表
+   由一组文档组成，相当于关系数据库中的一张表
+*** 命名
+    集合名可以是满足以下条件的任意UTF-8字符串:
+    #+BEGIN_EXAMPLE
+    集合名不能是空字符串("")
+    集合名不能包含\0字符(空字符), 该字符表示集合名的结束
+    集合名不能以"system."开头，这是为系统集合保留的前缀。
+    用户创建的集合不能在集合名中包含保留字符"$"。因为某些系统生成的集合中包含$, 很多驱动程序确实
+    支持在集合名里包含该字符。除非你要访问这种系统创建的集合，否则不应该在集合中包含$.
+    #+END_EXAMPLE
+*** 子集合
+    使用"."分割不同命名空间的子集和。如： 一个博客功能可能包含两个集合，分别是blog.posts, blog.authors
+    这是为了使组织结构更清晰，这里的blog集合(这个集合甚至不需要存在)跟它的子集合没有任何关系。
+    在mongodb中，使用子集合来组织数据非常高效，值得推荐。
+** 数据库
+   多个集合就可以组成数据库。每个数据库都有独立的权限，不同的数据库放置在不同的文件中。
+   数据库名有如下的限制:
+   #+BEGIN_EXAMPLE
+   不能是空字符串("")
+   不得含有/,\ , . ", *, <, >, :, |, ?, $， 一个空格， \0(空字符)。基本上只能使用ASCII中的字母和数字
+   数据库名区分大小写，即便是在不区分大小写的文件系统中也是如此。简单起见，数据库名应全部小写
+   数据库名最多为64字节
+   #+END_EXAMPLE
+   数据库最终会变成文件系统里的文件， 数据库名就是相应的文件名。
+   特殊的保留数据名有：
+   #+BEGIN_EXAMPLE
+   admin: 从身份验证的角度将，这是"root"数据库。将某个用户添加到admin数据库中，该用户将自动获得所有
+   数据库的权限。某些特定的服务器端命令也只能从admin数据库运行。
+   local: 该数据库永远不可以复制，并且一台服务器上的所有本地集合都可以存储在这个数据库中
+   config: mongodb用于分片设置时，分片信息会存储在config数据库中。
+   #+END_EXAMPLE
+** 启动mongodb
+   通常mongodb作为网络服务器来运行，客户端可以连接到该服务器并执行操作。
+*** mongodb的版本管理
+    mongodb的版本中，偶数号为稳定版本，奇数号为开发版。例如：2.4就是稳定版本，2.5就是开发版
+    mongodb的漏洞追踪系统: https://jira.mongodb.org/secure/Dashboard.jspa 存在着核心服务器路线
+    图，查看该路线图，可以得知下一个稳定版本的发布时间。
+*** 启动
+    必须创建一个目录以便数据库写入文件。数据库默认使用/data/db目录，也可以指定其他目录。
+    如果建立了默认目录，需要确保有正确的写权限。
+    - 启动mongodb
+      <mongodb-install-path>/mongod --dbpath /data/path， 启动mongodb，并指定默认的数据存储目录
+      有关常用的选项，可以运行 mongod --help来查看
+    启动时，服务器会打印版本和系统信息，然后等待连接。默认情况下mongodb监听27017端口。
+    如果需要使用web rest接口，需要加上参数--rest, 2.6.1版本中可以使用--httpinterface
+    
+** mongodb shell
+   mongodb自带javascript shell，可以在shell中使用命令行与mongodb实例交流
+   mongo shell是一个完备的javascript解释器， 可以运行任意javascript程序。也可以充分利用javascript的标准库
+   也可以定义和调用javascript函数。
+   shell会检测输入的javascript语句是否完整， 在某行连续3次按下回车键可取消未输入完成的命令，并退出回到>-提示符
+   shell还包含一些非javascript语法的扩展。
+   mongo： 会自动连接到本地默认端口上的mongodb
+   mongo some-host:port/dbname: 连接到指定host:port上的dbname数据库
+   mongo --nodb: 启动时不连接任何数据库，之后使用如下代码可以连接到指定的数据库
+   #+BEGIN_SRC javascript
+   conn = new Mongo("host:port")
+   db = conn.getDB("dbname")
+   #+END_SRC
+   执行完上述命令后，就可以像正常使用db了，任何时候都可以使用这些命令来连接到不同的数据库或者服务器上。
+   在shell中输入help可以查看帮助文档
+   db.help()： 查看数据库级别的帮助文档
+   db.foo.help(): 查看集合级别的帮助文档
+   如果想知道一个函数的作用，可以直接输入函数名(函数名不用带())就可以查看该函数的实现代码。
+   mongo file.js: 执行js文件
+   mongo --quiet host:port/dbname file1.js file2.js: 执行指定主机端口上的mongod运行脚本
+   #+BEGIN_EXAMPLE
+   可以在脚本中使用print()函数，将内容输出到标准输出，这样就可以在shell中使用管道命令。
+   如果将shell脚本的输出管道给另一个使用--quiet选项的命令，就可以让shell不打印"MongoDB shell version..."提示
+   #+END_EXAMPLE
+   也可以使用load()函数，从交互式shell中运行脚本，load("file.js")
+   在脚本中可以访问db变量，但是shell的辅助函数(如use db, show dbs)不可以在文件中使用。这些辅助函数有对应的
+   js函数，如下所示：
+   #+BEGIN_EXAMPLE
+   use foo => db.getSisterDB("foo")
+   show dbs => db.getMongo().getDBs()
+   show collections => db.getCollectionNames()
+   #+END_EXAMPLE
+** mongodb 客户端命令
+   db: 查看当前指向哪个数据库
+   use dbname: 切换到数据库dbname
+   #+BEGIN_SRC javascript
+   post = {"title":"my blog", "content":"my content"} //定义一个合法的文档
+   db.blog.insert(post) // 插入到集合中
+   db.blog.find() // 查找插入的内容， 返回的结果中，会发现有一个额外的"_id"键， 
+   //shell会自动显示最多20个匹配文档，可以获取更多
+   db.blog.findOne() // 查看一条结果
+   // find(), findOne()可以接受一个查询文档作为限定条件。
+
+   post.comments = []
+   // update接受至少两个参数，第一个是限定条件(用于匹配待更新的文档), 第二个是新的文档。
+   db.blog.update({"title":"my blog"}, post)
+
+   // remove方法可将文档从数据库中永久删除
+   db.blog.remove({"title": "my blog"})
+   #+END_SRC
+** 数据类型
+   - null
+     用于表示空值或者不存在的字段
+   - 布尔型
+     两个取值： true/false
+   - 数值
+     shell默认使用64位浮点型数值
+     对于整型值，可以使用NumberInt类(4字节带符号整数)/NumberLong类(8字节带符号整数)
+   - 字符串
+     UTF-8字符串都可以表示为字符串类型的数据
+   - 日期
+     日期被存储为自新纪元以来经过的毫秒数，不存储时区， {"x": new Date()}
+     创建日期对象时，应该使用new Date(...),而非Date(...),
+     原因是：Date()返回的是日期的字符串表示，而非日期对象
+   - 正则表达式
+     查询时， 使用正则表达式作为限定条件，语法与js的正则表达式语法相同
+   - 数组
+     {"x": ["a", "b", "c"]}
+     数组可以包含不同数据类型的元素
+     mongodb能"理解"其结构， 因此能使用数组内容对数组进行查询和构建索引了。
+     mongodb可以使用原子更新对数组内容进行修改。
+   - 内嵌文档
+     {"x": {"foo":"bar"}}
+     mongodb也能对内嵌文档建立索引。
+   - 对象id
+     是一个12个字节的ID，是文档的唯一标示。是一个由24个16进制数字组成的字符串，这个长长的
+     ObjectId是实际存储数据的两倍长
+     ObjectId的12字节按照如下方式生成:
+     0-3：时间戳
+     4-6：机器
+     7-8：PID(进程标识符)
+     9-11：计数器
+     绝大多数驱动程序会提供一个方法，用于从ObjectId获取这些信息
+     一秒中最多允许每个进程拥有2563(16777216)个不同的ObjectId
+   - 二进制数据
+     不能直接在shell中使用，如果要将非UTF-8字符保存到数据库中，二进制数据是唯一的方式。
+   - 代码
+     查询和文档中可以包括任意js代码
+
