@@ -36,6 +36,20 @@ categories:
     用户创建的集合不能在集合名中包含保留字符"$"。因为某些系统生成的集合中包含$, 很多驱动程序确实
     支持在集合名里包含该字符。除非你要访问这种系统创建的集合，否则不应该在集合中包含$.
     #+END_EXAMPLE
+    当某些集合名是mongo shell中的函数时，此时可以使用db.getCollection("name")来访问相应的集合
+    如果集合名中包含无效的javascript属性名称，也可以使用这个函数。
+    也可以使用数组访问方法来访问无效属性名称的集合。例如:
+    #+BEGIN_SRC javascript
+    var collections = ["posts", "comments", "authors"];
+    for (var i in collections) {
+        print(db.blog[collections[i]]);
+    }
+    #+END_SRC
+    使用数组方法访问怪异的集合:
+    #+BEGIN_SRC javascript
+    var name = "@#&!";
+    db[name].find();
+    #+END_SRC
 *** 子集合
     使用"."分割不同命名空间的子集和。如： 一个博客功能可能包含两个集合，分别是blog.posts, blog.authors
     这是为了使组织结构更清晰，这里的blog集合(这个集合甚至不需要存在)跟它的子集合没有任何关系。
@@ -71,7 +85,6 @@ categories:
       有关常用的选项，可以运行 mongod --help来查看
     启动时，服务器会打印版本和系统信息，然后等待连接。默认情况下mongodb监听27017端口。
     如果需要使用web rest接口，需要加上参数--rest, 2.6.1版本中可以使用--httpinterface
-    
 ** mongodb shell
    mongodb自带javascript shell，可以在shell中使用命令行与mongodb实例交流
    mongo shell是一个完备的javascript解释器， 可以运行任意javascript程序。也可以充分利用javascript的标准库
@@ -104,6 +117,31 @@ categories:
    show dbs => db.getMongo().getDBs()
    show collections => db.getCollectionNames()
    #+END_EXAMPLE
+   在服务器运行mongod时，通过指定--noscripting可以关闭js的执行
+*** 使用脚本将变量注入到shell
+    #+BEGIN_SRC javascript
+    // 连接到指定的数据库, 保存到文件defineConnectTo.js
+    var connectTo = function(port, dbname) {
+        if (!port) {
+            port = 27017;
+        }
+        if (!dbname) {
+            dbname = "test";
+        }
+        db = connect("localhost:"+port+"/"+dbname);
+        return db;
+    };
+    
+    #+END_SRC
+    之后就可以在mongo shell中使用如下语句加载函数
+    load('defineConnectTo.js')
+    shell会在运行是所处的目录中查找脚本，可以使用run('pwd')命令查看启动mongo shell的路径
+    load()也可以传递一个绝对路径的js文件，但是无法解析'~'符号
+    run()可以执行命令行程序，例如:
+    #+BEGIN_EXAMPLE
+    run("ls", "-l", "/home/demon")
+    使用这种方式局限性很大，输出格式也很奇怪，且不支持管道。
+    #+END_EXAMPLE
 ** mongodb 客户端命令
    db: 查看当前指向哪个数据库
    use dbname: 切换到数据库dbname
@@ -135,7 +173,7 @@ categories:
    - 日期
      日期被存储为自新纪元以来经过的毫秒数，不存储时区， {"x": new Date()}
      创建日期对象时，应该使用new Date(...),而非Date(...),
-     原因是：Date()返回的是日期的字符串表示，而非日期对象
+     原因是：Date()返回的是日期的字符串表示，而非日期对象， 可以使用typeof(...)查看数据类型
    - 正则表达式
      查询时， 使用正则表达式作为限定条件，语法与js的正则表达式语法相同
    - 数组
@@ -161,3 +199,283 @@ categories:
    - 代码
      查询和文档中可以包括任意js代码
 
+** 创建.mongorc.js文件
+   频繁加载的命令/脚本可以添加到.mongorc.js文件中, 该文件会在启动shell时自动运行。
+   例如，打印欢迎信息:
+   #+BEGIN_SRC javascript
+   var info =["attractive", "intelligent", "like Batman"];
+   var index = Math.floor(Math.random()*3)
+   print("Hello, "+info[index]);
+   #+END_SRC
+   .mongorc.js最常见用途之一就是移除那些比较"危险"的辅助函数，例如:
+   #+BEGIN_SRC javascript
+   var no = function() {
+       print("Not on my watch.");
+   }
+
+   // 禁止删除数据库
+   db.dropDatabase = DB.prototype.dropDatabase = no;
+   #+END_SRC
+   mongo --norc: 启动时禁止加载.mongorc.js
+*** 定制shell提示
+    设置prompt:
+    prompt = function() {
+        return ((new Date()))+"> ";
+    };
+*** 编辑符合变量
+    首先需要设置EDITOR环境变量， EDITOR="/editor/path"
+    之后在mongo shell中可以使用如下命令编辑变量: edit var-name
+    可以在.mongorc.js文件中添加一行EDITOR="/editor/path"即可
+   
+* 创建/更新/删除文档
+** 插入
+   - 批量插入
+     在shell中可以使用batchInsert(), 接受一个文档数组作为参数。
+     如果在执行批量插入的过程中有一个文档插入失败，那么在这个文档之前的所有
+     文档都会成功插入，之后的文档不会插入。如果希望批量插入忽略错误，可以使用
+     continueOnError选项， shell并不支持该选项。所有驱动程序都支持
+   - 插入校验
+     所有文档都必须小于16M(这个值是MongoDB设计者认为设定的, 未来可能会增大).
+     Object.bsonsize(doc): 查看doc的大小。
+** 删除文档
+   db.foo.remove(): 删除foo集合中的所有信息，但不会删除集合本身，也不会
+   删除集合的元信息。
+   如果要清空整个集合，使用drop直接删除集合会更快。
+** 更新
+   update()有两个参数，一个是查询文档，另一个是修改器。
+   最好确保更新是总是指定一个唯一文档。
+   如果要更新所有匹配的文档，可以将update的第4个参数设置为true，
+   update的行为可能会发生变化，建议每次都显示指定是否要更新多个文档
+   想要知道更新了多少个文档，可以使用如下命令:
+   #+BEGIN_EXAMPLE
+   db.runCommand({getLastError:1}) // 输出的n就是被更新文档的数量
+   #+END_EXAMPLE
+*** 使用修改器
+    - $set 修改器
+      #+BEGIN_SRC javascript
+      db.col_name.update({"_id":"xxx"}, {"$set":{"key":"value"}});
+      // $set还可以改变键的类型, 例如：
+      db.col_name.update({"_id":"xxx"}, {"$set":{"key":["value", "value2"]}});
+      // $unset可以删除整个键
+      db.users.update({"name": "joe"}, {"$unset": {"key": 1}})
+      // 可以使用set修改内嵌文档, 修改author内嵌的name属性
+      db.blog.posts.update({"author":"joe"}, {"$set": {"author.name":"xxx"}})
+      #+END_SRC
+    - $inc
+      用来增加已有键的值，或者该键不存在就创建一个。该方法只能用于整型，长整型或
+      双精度浮点型的值。
+    - $push
+      向已有的数组末尾加入一个元素， 要是没有就创建一个数组。
+      使用$each子操作，可以一次添加很多个值:
+      db.stock.ticker.update({"_id":"xx"}, {"$push": {"hourly": {"$each":[5, 6, 7]}}});
+    - $slice
+      如果希望数组的最大长度是固定的， 可以将"$slice"和"$push"组合在一起。
+      #+BEGIN_SRC javascript
+      // 限制数组只包含最后加入的10个元素
+      db.movies.update({"genere":"h"}, {"$push":{"top10": {"$each":["n", "m"], "$slice":-10}}});
+      #+END_SRC
+      不能只将"$slice"或者"$sort"与"$push"配合使用，且必须使用"$each"，
+      #+BEGIN_SRC javascript
+      // 对xxx进行排序
+      db.movies.update({"genere":"h"}, {"$push":{"top10": {"$each":["n", "m"], "$slice":-10, "$sort":{"xxx":-1}}}});
+      #+END_SRC
+    - 将数组作为数据集使用
+      "$ne": 如果不在数组中，就添加进去
+      db.papers.update({"authors cited":{"$ne": "Richie"}}, {$push: {"authors cited": "Richie"}});
+      也可以使用$addToSet来实现，某些情况下addToSet更合适。
+      db.users.update({"_id":"xx"}, {"$addToSet":{"emails":"xx"}});
+      可以将$addToSet与$each组合起来：
+      db.users.update({"_id":"xx"}, {"$addToSet": {"emails":{"$each":["x1", "x2"]}}});
+      {$pop:{"key":1}}：从数组的末尾删除一个元素
+      {$pop:{"key":-1}}: 从数组头部删除
+      $pull： 会将所有匹配的文档删除，而不是只删除一个。
+      db.list.update({}, {"$pull":{"todo":"value"}});
+    - 基于位置的数组修改
+      将comments的第一个元素的votest增加1
+      db.blog.update({"_id":"xx"}, {"$inc":{"comments.0.votest":1}})
+      mongodb提供了定位操作符"$", 用来定位查询文档已经匹配的数组元素，并进行更新，例如：
+      #+BEGIN_SRC javascript
+      // blog的一个文档内容如下
+      /*
+        {"_id":xx,
+         "content":"...",
+         "comments": [
+             {
+                 "comment":"..",
+                 "author":"john",
+                 "votes":0
+             },
+             {
+                 "comment":"..",
+                 "author":"hhh",
+                 "votes":0
+             }
+         ]}
+      */
+      db.blog.update({"comments.author":"John"}, {"$set":{"comments.$.author":"jim"}});
+      #+END_SRC
+      定位器只更新第一个匹配的元素，如果某人有多条评论，只会修改第一条评论中的数据
+    - 修改器的速度
+      db.collname.stats()：可以查看collname集合的填充因子，paddingFactor就是填充因子。
+      应该尽量让填充因子的值接近1.无法手动设定填充因子的值，除非要对集合进行压缩。
+      如果你的模式在进行插入和删除时会进行大量的移动或者是经常打乱数据，可以使用usePowerOf2Sizes
+      选项以提高磁盘复用率。可以使用collMod命令来设定这个选项。
+      db.runCommand({"collMod":collectionName, "usePowerOf2Sizes":true}) //设为false就会关闭该机制。
+      设定之后该集合之后进行的所有空间分配大小都是2的幂，应该只在需要经常打乱数据的集合上使用。
+      在一个只进行插入或者原地更新数据的集合上使用该选项会导致速度变慢。
+    - upsert
+      在使用update方法时，如果第三个参数设置为true，则会启用upsert功能，即当不存在时，就插入数据库
+      db.users.update({"rep":25}, {"$inc":{"rep":3}}, true)
+    - $setOnInsert
+      会在插入数据的时候设置字段的值
+      db.users.update({}, {"$setOnInsert":{"createdAt": new Date()}}, true);
+    - save方法
+      如果一个文档含有"_id"见，save会调用upsert方法，否则调用insert方法
+      
+*** findAndModify
+    用于处理有竞争的情况
+    例如:
+    #+BEGIN_EXAMPLE
+    ps = db.runCommand({"findAndModify":"collectname", 
+                        "query":{"status":"READY"},
+                        "sort": {"priority": -1},
+                        "update": {"$set": {"status":"RUNNING"}}}).value
+    do_something(ps); // 运行ps后READY状态会变成RUNNING状态
+    db.process.update({"_id":ps._id}, {"$set":{"status":"DONE"}});
+    #+END_EXAMPLE
+    更多的用法，请google.
+    
+** 写入安全
+   两种最基本的写入安全机制是应答式写入和非应答式写入。
+   应答式写入是默认的方式，数据库会给出响应，告诉你写入是否成功执行。
+   非应答式写入不返回任何响应，无法知道写入是否成功。
+   
+* 查询
+  find(): 第一个参数是查询的条件(where条件)， 第二个参数是指定需要返回的键，其格式如下:
+  db.user.find({}, {"username":1, "email":0})// username显示，email不显示
+** 查询条件
+   db.users.find({"age":{"$gte":18, "$lte": 30}});
+   可以使用的有:
+   $lt(<), $lte(<=), $gt(>), $gte(>=), $ne(!=, 可以用于所有的类型的数据)
+** or查询
+   or查询有两种方式，一是: "$in", 另一种是"$or"
+   #+BEGIN_EXAMPLE
+   db.user.find({"user_id": {"$in":[1, 2, 3]}})
+   db.user.find({"$or": [{"ticket_no":725}, {"winner":true}]})
+   db.user.find({"$or":[{"ticket_no": {"$in":[1, 2, 3]}}, {"winner":true}]})
+   #+END_EXAMPLE
+   与"$in"相对就是"$nin", 返回与数组中所有条件都不匹配的文档。
+** $not
+   "$not"是元条件句，可以用在任何其他条件之上。
+   db.user.find({"id_num":{"$not":{"$mod": [5, 1]}}})
+   $mod会将查询的值初一第一个给定值，若余数等于第二个参数则匹配成功
+   $not可以与正则表达式联合使用
+** 条件语义
+   基本可以肯定的是: 条件语句是内层文档的键，而修改器是外层文档的键。
+   一个键可以对应多个条件，但是不能对应多个更新修改器。
+   有些”元操作符"也位于外层文档中，如:"$and", "$or", "$not"
+   查询优化器不会对"$and"进行优化。
+   db.usr.find({"$and":[{"x": {"$lt": 1}}, {"x":4}]}) //匹配{"x":[0, 4]}等价于
+   db.user.find({"x": {"$lt":1, "$in":[4]}})// 效率更高
+** 特定类型的查询
+   db.c.find({"y":null}); // 返回y键为null或者不含有y键的文档
+   db.c.find({"y": {"$in": [null], "$exists": true}})// 返回有y键且y键为null
+** 正则表达式
+   db.users.find({"name": /joe/i}) // 查询joe，不区分大小写
+   系统能识别正则表达式标志(i), mongodb使用perl兼容的正则表达式(PCRE)库来匹配正则表达式。
+   mongodb可以为前缀型正则表达式如/^joey/查询建立索引
+   在查询时，正则表达式也可匹配自身。
+** 查询数组
+   db.food.find({"fruit":"apple"})// 会查询出fruit中包含apple的数据
+   $all:多个元素来匹配数组， db.food.find({"fruit":{"$all":["apple", "banana"]}})//同时包含
+   可以使用整个数组进行精确匹配，精确匹配对于缺少元素或者元素冗余的情况就不大灵了。如:
+   #+BEGIN_EXAMPLE
+   db.food.find({"fruit":["apple", "banana"]})，db.food.find({"fruit":["apple", "peach", "banana"]})
+   都不会匹配{"fruit":["apple", "banana", "peach"]}
+   #+END_EXAMPLE
+   查询数组特定位置的元素，需使用key.index语法指定，下标从0开始
+   db.food.find({"fruit.2":"peach"})
+   "$size": 查询特定长度的数组
+   "$slice": 可以返回某个匹配键的数组元素的一个子集。
+   db.blog.posts.findOne(criteria, {"comments":{"$slice":10}}); // 返回前10条， {"$slice":-10}, 返回后10条
+   {"$slice": [23, 100]}: 指定偏移值以及返回的元素数量
+** 返回一个匹配的数组元素
+   db.blog.posts.find({"comments.name":"bob"}, {"comments.$":1});// 只返回第一个匹配的文档
+   如果某个文档的"x"字段是一个数组，此时如果"x"键的某一个值与查询条件任意一条语句向匹配，则该文档也会返回。
+   因此对数组使用范围查询没有用。有几种方式可以得到预期的行为：
+   #+BEGIN_EXAMPLE
+   db.test.find({"x": {"$elemMatch":{"$gt":10, "$lt":20}}})// 只会匹配数组，不会匹配非数组
+   // 如果当前查询的字段上创建过索引，可以使用min()/max()将查询条件遍历的索引范围限制为"$gt"/"$lt"的值
+   db.test.find({"x":{"$gt":10, "$lt":20}}).min({"x":10}).max({"x":20})
+   在可能包含数组的文档上应用范围查询时，使用min()/max()是很好的，如果在整个索引范围对数组使用$gt/$lt,效率会很低
+   #+END_EXAMPLE
+** 查询内嵌文档
+   用点表示法查询内嵌文档，这样的查询是与顺序无关的。
+   一个复杂点的例子:
+   #+BEGIN_EXAMPLE
+   文档内容如下:
+   {"content":"...",
+    "comments":[{"author":"joe",
+                 "score":3,
+                 "comment":"nice post"},
+                {"author":"mary",
+                 "score":6,
+                 "comment":"terrible post"}]}
+   查询由joe发布的5分以上的评论
+   db.blog.find({"comments":{"$elemMatch":{"author":"joe", "score":{"$gte":5}}}})
+   #+END_EXAMPLE
+** $where查询
+   使用$where可以在查询中执行任意的js，应该严格限制或消除$where语句的使用。应该禁止终端用户使用任意的"$where"语句。
+   在使用$where查询时，每个文档都要从BSON转换为JS对象，$where也不能使用索引。
+   为了避免sql注入，可以使用作用域来传递name的值，
+   func = pymongo.code.Code("function() {print('hello, '+username+'!');}", {"username":name});
+** 游标
+   在shell中建立游标，只需要将查询结果赋值给某个变量即可，如: var cursor = db.blog.find();//构造查询
+   cursor.hasNext(): 是否有后继结果存在， 查询发往服务器执行
+   cursor.next(): 获得下一个结果
+   可以在forEach循环中使用:
+   cursor.forEach(function(x) {
+       print(x.name);
+   });
+   - limit
+     db.blog.find().limit(num): 返回num个结果
+     db.blog.find().skip(num): 跳过前num个结果
+     db.blog.find().sort({"key":1, "key2": -1}); // 排序，1：升序，-1：降序
+     略过过多的结果会导致性能问题。
+     处理方法之一是：可以利用第一页的数据直接查询数据库，
+** 高级查询选项
+   有一些选项可以用于对查询进行"封装",假如执行一个排序:
+   var cursor = db.foo.find({"foo":"bar"}).sort({"x":1})。此时会将查询封装在一个更大的文档中，
+   会转换成: {"$query":{"foo":"bar"}, "$orderby":{"x":1}}
+   绝大多数驱动程序提供了辅助函数，用于向查询中添加各种选项。
+   db.foo.find({"x":"xx"})._addSpecial("$maxscan", 20)//指定本次查询中扫描文档数量的上限
+   $min, $max,
+   db.foo.find({})._addSpecial("$showDiskLoc', true) //查询结果中添加一个"$diskLoc"字段，
+   file号码显示了这个文档所在的文件，第二个字段显示的是该文档在文件中的偏移量。
+*** 获取一致的结果
+    数据处理通常的做法就是先把数据从Mongodb中取出来，然后做一些变换，最后在存回去，如果文档体积增加了，而预留空
+    间不足，这时就需要对体积增大后的文档进行移动，通常会挪到末尾处。当游标移动到集合末尾时，就会返回因体积太大
+    无法放回原位置而被移动到集合末尾的文档。应对该问题，就是对查询进行快照。如果使用了该选项，
+    查询就在"_id"索引上遍历执行，这样可以保证每个文档只被返回一次。例如:
+    db.foo.find().snapshot(), 使用快照会使查询变慢，所以应该只在必要的时候使用快照。
+    所有返回单批结果的查询都被有效的进行了快照。
+*** 游标生命周期
+    服务端的游标会消耗内存和其他资源。释放的资源可以被数据库另做他用。应该尽量保证尽快释放游标。
+    如果一个游标在10分钟内没有被使用的话，数据库游标也会自动销毁。
+    大部分驱动程序都实现了一个叫immortal的函数， 告知数据库不要让游标超时。如果关闭了游标超时时间，
+    则一定要迭代完游标或者主动将其销毁，否则会一直在数据库中消耗资源。
+** 数据库命令
+   db.listCommands(): 可以看到所有的数据库命令
+*** 数据库命令工作原理
+    数据库命令总会返回一个包含"ok"键的文档，如果"ok"的值为1，说明命令执行成功，为0，则失败。
+    mongodb命令被实现为一种特殊类型的查询，这些特殊的查询会在$cmd集合上执行。runCommand只是
+    接受一个命令文档，并且执行与这个命令文档等价的查询。因此drop命令会被转换为如下代码:
+    #+BEGIN_EXAMPLE
+    db.$cmd.findOne({"drop":"test"});
+    #+END_EXAMPLE
+    当mongodb服务器得到一个在$cmd集合上的查询时，不会对这个查询进行通常的查询处理，而是会使用特殊的逻辑对其
+    进行处理。
+    如果需要执行一个管理员命令可以使用adminCommand。
+    mongodb中，数据库命令是少数与字段顺序相关的地方之一，命令名称必须是命令中第一个字段
+* 索引
+  db.user.find({username:"user1"}).explain()
