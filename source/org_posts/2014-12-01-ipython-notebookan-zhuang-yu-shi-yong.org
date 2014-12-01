@@ -1,0 +1,33 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "IPython notebook安装与使用"
+date: 2014-12-01 15:30:48 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 安装
+** python的开发组件
+   #+BEGIN_EXAMPLE
+   sudo apt-get install build-essential
+   sudo apt-get install python-dev   
+   #+END_EXAMPLE
+** pip安装python插件
+   #+BEGIN_EXAMPLE
+   NumPy、SciPy：處理科學數據用的算式
+   matplotlib：繪畫圖表用
+   SymPy：符號算術處理套件
+   scikits-learn：機器學習用
+   pandas：處理數據套件
+   NetworkX：處理網絡數據結構用
+   #+END_EXAMPLE
+** ipython notebook安装
+   #+BEGIN_EXAMPLE
+   sudo pip install "ipython[all]"
+   #+END_EXAMPLE
+** 启动
+   #+BEGIN_EXAMPLE
+   ipython notebook --ip='*' --pylab inline 
+   #+END_EXAMPLE
