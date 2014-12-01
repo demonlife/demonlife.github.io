@@ -1,0 +1,52 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "Nginx 模块开发与架构设计之请求上下文"
+date: 2014-11-30 08:42:05 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 读取配置信息
+  nginx已经为用户提供了强大的配置项解析机制，同时它还支持“-s reload”命令—在不重启服务的情况下
+  可使配置生效。
+  处理http配置项可以分为下面4个步骤：
+  #+BEGIN_EXAMPLE
+  1.创建数据结构用于存储配置项对应的参数。
+  2.设定配置项在nginx.conf中出现时的限制条件与回调方法。
+  3.实现第2步中的回调方法，或者使用Nginx框架预设的14个回调方法。
+  4.合并不同级别的配置块中出现的同名配置项。
+  #+END_EXAMPLE
+  这四个步骤是通过ngx\_http\_module\_t和ngx\_command\_t有机的结合起来的。
+** 分配用于保存配置参数的数据结构
+   定义如下的结构，用于保存配置参数：
+   #+BEGIN_SRC c struct:ngx_http_mytest_conf_t
+   typedef struct {
+       ngx_str_t my_str;
+       ngx_int_t my_num;
+       ngx_flag_t my_flag;
+       size_t my_size;
+       ngx_array_t* my_str_array;
+       ngx_array_t* my_keyval;
+       off_t my_off;
+       ngx_msec_t my_msec;
+       time_t my_sec;
+       ngx_bufs_t my_bufs;
+       ngx_uint_t my_enum_seq;
+       ngx_uint_t my_bitmask;
+       ngx_uint_t my_access;
+       ngx_path_t* my_path;
+   } ngx_http_mytest_conf_t;
+   #+END_SRC
+   HTTP框架在解析nginx.conf文件时只要遇到http{}、server{}或者location{}配置块就会立刻分配一个新的
+   ngx\_http\_mytest\_conf\_t结构体。HTTP模块感兴趣的配置项需要统一地使用一个struct结构体来保存
+   （否则HTTP框架无法管理），如果nginx.conf文件中在http{}下有多个server{}或者location{}，
+   那么这个struct结构体在Nginx进程中就会存在多份实例。
+   Nginx会使用前面讲到的ngx_http_module_t中的回调方法来管理ngx_http_mytest_conf_t结构体。其中的
+   create_main_conf、create_srv_conf、create_loc_conf这3个回调方法负责把我们分配的用于保存
+   配置项的结构体传递给HTTP框架。
+*** 设定配置项的解析方式
+    首先回顾一下ngx_command_t结构体
+    # file:../code/nginx-1.6.2.source/src/core/ngx_conf_file.h::78
+    # file:../code/nginx-1.6.2.source/src/core/ngx_conf_file.h::201 ngx_conf_post_t结构体

@@ -79,16 +79,35 @@ struct ngx_command_s {
     ngx_str_t             name; // 配置项名称
     ngx_uint_t            type; // 配置项类型，指定配置项可以出现的位置，以及携带的参数个数
 
-    // 出现了name中指定的配置项后，将会调用set方法处理配置项的参数
+    // 出现了name中指定的配置项后，将会调用set方法处理配置项的参数,
+    // 如果处理配置项，我们可以自己实现一个回调方法，也可以使用nginx预设的14个解析配置方法。
     char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
-    // 在配置文件中的偏移量
+    // 在配置文件中的偏移量， 仅在type中没有设置NGX_DIRECT_CONF和NGX_MAIN_CONF时才会生效。
+    // HTTP框架自动解析时需要知道应把解析出的配置项值写入哪个结构体中，这将由conf指定。
+    // 因此，对conf的设置是与ngx_http_module_t实现的回调方法相关的。
+
+    /*
+      如果用于存储这个配置项的数据结构是由create_main_conf回调方法完成的，
+      那么必须把conf设置为NGX_HTTP_MAIN_CONF_OFFSET。
+      如果这个配置项所属的数据结构是由create_srv_conf回调方法完成的，
+      那么必须把conf设置为NGX_HTTP_SRV_CONF_OFFSET。
+      可如果create_loc_conf负责生成存储这个配置项的数据结构，
+      就得将conf设置为NGX_HTTP_LOC_CONF_OFFSET。
+    */
     ngx_uint_t            conf;
 
     // 通常用于使用预设的解析方法解析配置项，需要与conf配置使用
+    // 表示当前配置项在整个存储配置项的结构体中的偏移位置（以字节（Byte）为单位）
+    // 使用offsetof宏即可实现。
     ngx_uint_t            offset;
 
     // 配置项读取后的处理方法， 必须是ngx_conf_post_t结构的指针
+    // 如果自定义了配置项的回调方法，那么post指针的用途完全由用户来定义。
+    // 如果不使用它，那么随意设为NULL即可。如果想将一些数据结构或者方法的指针传过来，那么使用post也可以。
+    // 如果需要在解析完配置项后回调某个方法，就要实现上面的ngx_conf_post_handler_pt，
+    // 并将包含post_handler的ngx_conf_post_t结构体传给post指针。
+    // 一般完全可以init_main_conf这样的方法统一处理解析完的配置项
     void                 *post;
 };
 

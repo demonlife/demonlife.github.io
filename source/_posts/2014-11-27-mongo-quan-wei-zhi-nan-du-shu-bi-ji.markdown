@@ -957,6 +957,6 @@ db.blog.find({"comments":{"$elemMatch":{"author":"joe", "score":{"$gte":5}}}})
 <h2 id="sec-5">索引</h2>
 <div class="outline-text-2" id="text-5">
 
-
-</div>
+<p>  db.user.find({username:"user1"}).explain()
+</p></div>
 </div>
