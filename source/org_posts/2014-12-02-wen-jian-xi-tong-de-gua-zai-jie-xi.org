@@ -1,0 +1,12 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "文件系统的挂载解析"
+date: 2014-12-02 13:56:24 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+* 原地址
+  http://cifer.me/2014/05/06/mount-illustration/
+* 
