@@ -8,6 +8,15 @@ categories:
 ---
 #+END_HTML
 
+* config文件写法
+  #+BEGIN_EXAMPLE
+  ngx_addon_name: 一般设置为模块名称
+  HTTP_MODULES: 保存所有的HTTP模块名称， 设置方法如下：
+  "$HTTP_MODULES my_ngx_http_module_name"
+  NGX_ADDON_SRCS: 用于指定新增模块的源代码，多个待编译的源代码间以空格符相连，
+  例如：NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/my_ngx_http_module_name.c"
+  #+END_EXAMPLE
+
 * http模块的调用
   worker进程会在一个for循环语句里反复调用事件模块检测网络事件， 当事件模块检测到
   某个客户端发起的TCP请求时，会建立tcp连接，成功建立连接后根据nginx.conf文件中的

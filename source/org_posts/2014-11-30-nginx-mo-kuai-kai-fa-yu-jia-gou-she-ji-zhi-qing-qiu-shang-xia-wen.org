@@ -57,5 +57,73 @@ categories:
     当nginx检测到http{...}配置项时，http配置模型就启动了，这时会首先建立一个ngx_http_conf_ctx_t
     结构体。
     # file:../code/nginx-1.6.2.source/src/http/ngx_http_config.h::17 ngx_http_conf_ctx_t
-*** http配置模型的内存布局
-    
+*** http配置模型的内存布局(P144)
+* error日志的用法
+  nginx的日志模块(此处所说的日志模块是ngx_errlog_module模块，而ngx_http_log_module模块是用于记录
+  http请求的访问日志的。两者功能不同，在实现上也没有任何关系)为其他模块提供了基本的记录日志功能。
+  出于跨平台的考虑， 日志模块提供了相当多的接口，主要是有些平台不支持可变参数。
+  - nginx提供的接口
+    #+BEGIN_SRC c 
+    #define ngx_log_error(level, log, args...) \
+        if ((log)->log_level >= level) ngx_log_error_core(level, log, args)
+
+    #define ngx_log_debug(level, log, args...) \
+        if ((log)->log_level & level) \
+            ngx_log_error_core(NGX_LOG_DEBUG, log, args)
+
+    void ngx_log_error_core(ngx_uint_t level, ngx_log_t *log, \
+                            ngx_err_t err, const char *fmt, ...)
+    #+END_SRC
+    日志模块记录日志的核心功能是由ngx_log_error_core方法实现的
+** log参数说明
+   在开发http模块时，并不关心log参数的构造，因为在处理请求时ngx_http_request_t结构中的connection
+   成员就有一个ngx_log_t类型的log成员，可以传给ngx_log_error宏和ngx_log_debug宏记录日志。
+   在读取配置阶段，ngx_conf_t结构也有log成员可以用来记录日志(读取配置阶段时的日志信息将输出到
+   控制台屏幕)。
+   # file:../code/nginx-1.6.2.source/src/core/ngx_core.h::17 ngx_log_t
+   # file:../code/nginx-1.6.2.source/src/core/ngx_log.h::48 ngx_log_s
+   如果只想把相应的信息记录到日志文件中， 完全不需要关心ngx_log_t类型的log参数是如何构造的，
+   特别是在编写http模块时，http框架要求所有的http模块都使用它提供的log，如果重新定义ngx_log_t中的
+   handler方法，或者修改data指向的地址，那么很可能会造成一系列问题。
+* 请求的上下文N
+  nginx中，上下文有很多含义， 本节所指的是HTTP框架为每个http请求所准备的结构体。一个请求对应于每
+  一个http模块都可以有一个独立的上下文结构体。
+** 使用http上下文
+   ngx_http_get_module_ctx和ngx_http_set_ctx这两个宏可以完成HTTP上下文的设置和使用
+   - 定义
+     #+BEGIN_SRC c
+     #define ngx_http_get_module_ctx(r, module) (r)->ctx[module.ctx_index]
+     #define ngx_http_set_ctx(r, c, module) r->ctx[module.ctx_index] = c;
+     #+END_SRC
+     在任何一个http模块中，都可以使用ngx_http_get_module_ctx获取所有http模块为该请求创建的
+     上下文结构。
+   - 一个简单的例子
+     1. 建立mytest模块的上下文结构体，如 ngx_http_mytest_ctx_t
+        #+BEGIN_SRC c
+        typedef struct {
+            ngx_uint_t my_step;
+        } ngx_http_mytest_ctx_t;
+        #+END_SRC
+     2. 当请求第一次进入mytest模块处理时， 创建ngx_http_mytest_ctx_t结构体，并设置到这个请求
+        的上下文
+        #+BEGIN_SRC c
+        static ngx_int_t ngx_http_mytest_handler(ngx_http_request_t *r) {
+            // 获取上下文结构体
+            ngx_http_mytest_ctx_t *myctx = ngx_http_get_module_ctx(r, ngx_http_mytest_module);
+            // 如果之前没有设置过上下文，则应当返回NULL
+            if (myctx == NULL) {
+                myctx = ngx_palloc(r->pool, sizeof(ngx_http_mytest_ctx_t));
+                if (myctx == NULL) {
+                    return NGX_ERROR;
+                }
+                // 将刚分配的结构体设置到当前请求的上下文中
+                ngx_http_set_ctx(r, myctx, ngx_http_mytest_module);
+            }
+            // 使用myctx这个上下文结构体
+        }
+        #+END_SRC
+        http框架可以对一个请求保证，无论调用多少次ngx_http_get_module_ctx宏都只取到同一个上下
+        文结构体。
+*** http框架维护上下文
+    ngx_http_request_t结构的ctx成员是一个指针的指针，http框架就在ctx数组中保存所有HTTP模块
+    上下文结构体的指针的。

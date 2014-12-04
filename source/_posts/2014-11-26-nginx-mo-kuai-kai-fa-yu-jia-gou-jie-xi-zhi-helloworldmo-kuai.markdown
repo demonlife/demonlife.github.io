@@ -11,19 +11,20 @@ categories:
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#sec-1">1 http模块的调用</a>
+<li><a href="#sec-1">1 config文件写法</a></li>
+<li><a href="#sec-2">2 http模块的调用</a>
 <ul>
-<li><a href="#sec-1-1">1.1 nginx使用的数据类型(P72)</a></li>
-<li><a href="#sec-1-2">1.2 HTTP模块的数据结构</a>
+<li><a href="#sec-2-1">2.1 nginx使用的数据类型(P72)</a></li>
+<li><a href="#sec-2-2">2.2 HTTP模块的数据结构</a>
 <ul>
-<li><a href="#sec-1-2-1">1.2.1 处理用户请求</a></li>
-<li><a href="#sec-1-2-2">1.2.2 获取http包体</a></li>
-<li><a href="#sec-1-2-3">1.2.3 发送响应</a></li>
+<li><a href="#sec-2-2-1">2.2.1 处理用户请求</a></li>
+<li><a href="#sec-2-2-2">2.2.2 获取http包体</a></li>
+<li><a href="#sec-2-2-3">2.2.3 发送响应</a></li>
 </ul>
 </li>
-<li><a href="#sec-1-3">1.3 将磁盘文件作为包体发送</a>
+<li><a href="#sec-2-3">2.3 将磁盘文件作为包体发送</a>
 <ul>
-<li><a href="#sec-1-3-1">1.3.1 支持用户多线程下载和断点续传</a></li>
+<li><a href="#sec-2-3-1">2.3.1 支持用户多线程下载和断点续传</a></li>
 </ul>
 </li>
 </ul>
@@ -33,8 +34,27 @@ categories:
 </div>
 
 <div id="outline-container-1" class="outline-2">
-<h2 id="sec-1">http模块的调用</h2>
+<h2 id="sec-1">config文件写法</h2>
 <div class="outline-text-2" id="text-1">
+
+
+
+
+<pre class="example">ngx_addon_name: 一般设置为模块名称
+HTTP_MODULES: 保存所有的HTTP模块名称， 设置方法如下：
+"$HTTP_MODULES my_ngx_http_module_name"
+NGX_ADDON_SRCS: 用于指定新增模块的源代码，多个待编译的源代码间以空格符相连，
+例如：NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/my_ngx_http_module_name.c"
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2">http模块的调用</h2>
+<div class="outline-text-2" id="text-2">
 
 <p>  worker进程会在一个for循环语句里反复调用事件模块检测网络事件， 当事件模块检测到
   某个客户端发起的TCP请求时，会建立tcp连接，成功建立连接后根据nginx.conf文件中的
@@ -43,24 +63,24 @@ categories:
 </p>
 </div>
 
-<div id="outline-container-1-1" class="outline-3">
-<h3 id="sec-1-1">nginx使用的数据类型(P72)</h3>
-<div class="outline-text-3" id="text-1-1">
+<div id="outline-container-2-1" class="outline-3">
+<h3 id="sec-2-1">nginx使用的数据类型(P72)</h3>
+<div class="outline-text-3" id="text-2-1">
 
 </div>
 
 </div>
 
-<div id="outline-container-1-2" class="outline-3">
-<h3 id="sec-1-2">HTTP模块的数据结构</h3>
-<div class="outline-text-3" id="text-1-2">
+<div id="outline-container-2-2" class="outline-3">
+<h3 id="sec-2-2">HTTP模块的数据结构</h3>
+<div class="outline-text-3" id="text-2-2">
 
 
 </div>
 
-<div id="outline-container-1-2-1" class="outline-4">
-<h4 id="sec-1-2-1">处理用户请求</h4>
-<div class="outline-text-4" id="text-1-2-1">
+<div id="outline-container-2-2-1" class="outline-4">
+<h4 id="sec-2-2-1">处理用户请求</h4>
+<div class="outline-text-4" id="text-2-2-1">
 
 <p>    在出现mytest配置项时， ngx_http_mytest方法会被调用，
     这时将ngx_http_core_loc_conf_t
@@ -88,9 +108,9 @@ categories:
 
 </div>
 
-<div id="outline-container-1-2-2" class="outline-4">
-<h4 id="sec-1-2-2">获取http包体</h4>
-<div class="outline-text-4" id="text-1-2-2">
+<div id="outline-container-2-2-2" class="outline-4">
+<h4 id="sec-2-2-2">获取http包体</h4>
+<div class="outline-text-4" id="text-2-2-2">
 
 <p>    ngx_http_read_client_request_body方法是一个异步方法，用于接收http包体
     包体接收完毕后会回调方法，该方法的原型如下:
@@ -102,9 +122,9 @@ categories:
 
 </div>
 
-<div id="outline-container-1-2-3" class="outline-4">
-<h4 id="sec-1-2-3">发送响应</h4>
-<div class="outline-text-4" id="text-1-2-3">
+<div id="outline-container-2-2-3" class="outline-4">
+<h4 id="sec-2-2-3">发送响应</h4>
+<div class="outline-text-4" id="text-2-2-3">
 
 <p>    请求处理完毕后，需要向用户发送HTTP响应，告知客户端Nginx的执行结果。HTTP响应主要包括
     响应行，响应头部，包体三部分。发送http响应时需要执行发送HTTP头部和发送HTTP包体两步
@@ -135,9 +155,9 @@ categories:
 
 </div>
 
-<div id="outline-container-1-3" class="outline-3">
-<h3 id="sec-1-3">将磁盘文件作为包体发送</h3>
-<div class="outline-text-3" id="text-1-3">
+<div id="outline-container-2-3" class="outline-3">
+<h3 id="sec-2-3">将磁盘文件作为包体发送</h3>
+<div class="outline-text-3" id="text-2-3">
 
 <p>   发送磁盘中的文件内容也是使用上面介绍的方法。不同之处在于设置ngx_buf_t缓冲区.
    将其中的in_file设置为1就表示这次ngx_buf_t缓冲区发送的是文件而不是内存.
@@ -180,9 +200,9 @@ categories:
 </p>
 </div>
 
-<div id="outline-container-1-3-1" class="outline-4">
-<h4 id="sec-1-3-1">支持用户多线程下载和断点续传</h4>
-<div class="outline-text-4" id="text-1-3-1">
+<div id="outline-container-2-3-1" class="outline-4">
+<h4 id="sec-2-3-1">支持用户多线程下载和断点续传</h4>
+<div class="outline-text-4" id="text-2-3-1">
 
 <p>    RFC2616规范定义了range协议，给出了一种规则使得客户端可以在一次请求中只下载文件的一部分。
     range也支持断点续传，只要客户端记录了上一次中断时已经下载部分的文件偏移量即可。

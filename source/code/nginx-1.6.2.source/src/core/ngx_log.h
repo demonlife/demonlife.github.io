@@ -46,12 +46,18 @@ typedef u_char *(*ngx_log_handler_pt) (ngx_log_t *log, u_char *buf, size_t len);
 
 
 struct ngx_log_s {
+    // 日志级别或者日志类型
     ngx_uint_t           log_level;
+    // 日志文件
     ngx_open_file_t     *file;
 
+    // 连接数，不为0时输出到日志中
     ngx_atomic_uint_t    connection;
 
+    // 记录日志时的回调方法，当handler已经实现并且不是DEBUG调试级别时，才会调用handler钩子方法
     ngx_log_handler_pt   handler;
+    // 每个模块都可以定义data的使用方法， 通常，data参数都是在实现了
+    // handler回调方法后才使用。
     void                *data;
 
     /*
@@ -59,7 +65,7 @@ struct ngx_log_s {
      * the static strings and in the "u_char *" case we have to override
      * their types all the time
      */
-
+    // 表示当前的动作， 只有在实现了handler回调方法后才会使用
     char                *action;
 
     ngx_log_t           *next;

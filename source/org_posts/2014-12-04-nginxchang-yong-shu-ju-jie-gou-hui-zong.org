@@ -1,0 +1,128 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "nginx常用数据结构汇总"
+date: 2014-12-04 17:08:30 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 配置文件中可以使用的变量
+  # 可以在配置文件中使用ngx_http_core_module模块提供的变量
+
+* 整型数的封装
+  #+BEGIN_SRC c
+  typedef intptr_t ngx_int_t; // 有符号数
+  typedef uintptr_t ngx_uint_t; // 无符号数
+  #+END_SRC
+  # file:../code/nginx-1.6.2.source/src/core/ngx_config.h::78     
+* ngx\_str\_t
+  #+BEGIN_SRC c
+  typedef struct {
+      size_t      len; // 字符串的有效长度, 因此使用时需要根据长度len来使用data成员
+      u_char     *data; // 指向字符串起始地址
+  } ngx_str_t;
+  #+END_SRC
+  # file:../code/nginx-1.6.2.source/src/core/ngx_string.h::16
+* ngx\_list\_t
+  是一个链表容器
+  #+BEGIN_SRC c
+  typedef struct ngx_list_part_s  ngx_list_part_t;
+  struct ngx_list_part_s {
+      void             *elts;
+      ngx_uint_t        nelts;
+      ngx_list_part_t  *next;
+  };
+  typedef struct {
+      ngx_list_part_t  *last;
+      ngx_list_part_t   part;
+      size_t            size;
+      ngx_uint_t        nalloc;
+      ngx_pool_t       *pool;
+  } ngx_list_t;
+  #+END_SRC
+  # file:../code/nginx-1.6.2.source/src/core/ngx_list.h::18
+* ngx\_table\_elt\_t
+  是一个key/value对
+  #+BEGIN_SRC c
+  typedef struct {
+      ngx_uint_t        hash;
+      ngx_str_t         key;
+      ngx_str_t         value;
+      u_char           *lowcase_key;
+  } ngx_table_elt_t;
+  #+END_SRC
+  # file:../code/nginx-1.6.2.source/src/core/ngx_hash.h::92
+* ngx\_buf\_t
+  ngx_buf_t是nginx处理大数据的关键数据结构， 即用于内存也用于磁盘数据
+  #+BEGIN_SRC c
+  typedef struct ngx_buf_s  ngx_buf_t;
+  #+END_SRC
+  对于HTTP模块来说，需要注意HTTP框架，事件框架是如何设置和使用pos，last等指针
+  以及如何处理这些标志位的。
+  # file:../code/nginx-1.6.2.source/src/core/ngx_buf.h::18
+* ngx\_chain\_t
+  ngx_chain_t是与ngx_buf_t配合使用的链表数据结构
+  #+BEGIN_SRC c
+  typedef struct ngx_chain_s       ngx_chain_t;
+  struct ngx_chain_s {
+      ngx_buf_t    *buf; // 指向当前的ngx_buf_t缓冲区
+      ngx_chain_t  *next; // 指向下一个ngx_chain_t， 如果是最后一个需设置为NULL
+  };  
+  #+END_SRC
+  # file:../code/nginx-1.6.2.source/src/core/ngx_core.h::16
+  # file:../code/nginx-1.6.2.source/src/core/ngx_buf.h::68
+* HTTP模块的数据结构
+** ngx\_module\_t
+   ngx_module_t 是一个nginx模块的数据结构
+   #+BEGIN_SRC c
+   typedef struct ngx_module_s      ngx_module_t;
+   struct ngx_module_s {
+       ...
+       void *ctx; // 对于http类型的模块来说， 该指针必须指向ngx_http_module_t接口
+       ngx_command_t *commands; // 用于定义模块的配置文件参数， 每一个数组元素都是
+       // ngx_command_t类型， 数组的结尾用ngx_null_command表示
+       ...
+   }   
+   #+END_SRC
+   # file:../code/nginx-1.6.2.source/src/core/ngx_core.h::12
+   # file:../code/nginx-1.6.2.source/src/core/ngx_conf_file.h::102
+** ngx\_http\_module\_t
+   HTTP框架在读取，重载配置文件时定义了由ngx_http_module_t结构描述的8个阶段，
+   在启动过程中会在每个阶段调用ngx_http_module_t中相应的方法。
+   # file:../code/nginx-1.6.2.source/src/http/ngx_http_config.h::24
+** ngx\_command\_t
+   #+BEGIN_SRC c
+   typedef struct ngx_command_s ngx_command_t;
+   struct ngx_command_s {
+       ngx_str_t             name;
+       ngx_uint_t            type;
+       char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+       ngx_uint_t            conf;
+       ngx_uint_t            offset;
+       void                 *post;
+   };   
+   #+END_SRC
+   # file:../code/nginx-1.6.2.source/src/core/ngx_core.h::19 ngx_command_t
+   # file:../code/nginx-1.6.2.source/src/core/ngx_conf_file.h::78 ngx_command_s
+** ngx\_http\_request\_t
+   请求的所有信息都可以在传入的ngx_http_request_t类型参数r中取得
+   typedef struct ngx_http_request_s ngx_http_request_t;
+   在对一个用户请求进行解析时， 可得到下列4类信息：
+   1.方法名
+     method的类型是ngx_uint_t，其取值在文件：
+     code/nginx-1.6.2.source/src/http/ngx_http_request.h::27
+     中, 当需要了解请求中的http方法时， 应该使用r->method与上述
+     文件中定义的15个宏进行比较，当然也可以使用r->method_name与字符串比较
+     只是效率会差些。P96
+   2. URI
+   3. URL 参数
+   4. 协议版本
+   # file:../code/nginx-1.6.2.source/src/http/ngx_http.h::17 ngx_http_request_t
+   # file:../code/nginx-1.6.2.source/src/http/ngx_http_request.h::359 ngx_http_request_s
+** ngx\_http\_request\_t
+   在ngx_http_request_t 中可以取到请求中的http头部信息
+   # file:../code/nginx-1.6.2.source/src/http/ngx_http_request.h::359 ngx_http_request_s
+** ngx\_http\_headers\_out\_t
+   # file:../code/nginx-1.6.2.source/src/http/ngx_http_request.h::243
