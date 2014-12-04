@@ -50,3 +50,12 @@ categories:
     首先回顾一下ngx_command_t结构体
     # file:../code/nginx-1.6.2.source/src/core/ngx_conf_file.h::78
     # file:../code/nginx-1.6.2.source/src/core/ngx_conf_file.h::201 ngx_conf_post_t结构体
+*** 合并配置项
+    如果需要在server块，http块内出现的配置项也生效，可以通过merge\_loc\_conf方法来实现。如果合并
+    具体就取决于具体的merge\_loc\_conf实现。
+*** http 配置模型
+    当nginx检测到http{...}配置项时，http配置模型就启动了，这时会首先建立一个ngx_http_conf_ctx_t
+    结构体。
+    # file:../code/nginx-1.6.2.source/src/http/ngx_http_config.h::17 ngx_http_conf_ctx_t
+*** http配置模型的内存布局
+    

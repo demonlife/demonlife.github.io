@@ -69,7 +69,7 @@ categories:
 </p><ul>
 <li>方法的返回值
       方法的返回值取值定义在 src/http/ngx_http_request.h文件中
-      在ngx<sub>http</sub><sub>mytest</sub><sub>handler的返回值中，如果是正常的HTTP返回码</sub>, nginx会按照规范构
+      在ngx_http_mytest_handler的返回值中，如果是正常的HTTP返回码, nginx会按照规范构
       造合法的响应包发送给用户。当返回的是错误码时，会构造响应错误的返回值。
       在处理方法中除了返回HTTP响应码外，还可以返回Nginx全局定义的几个错误码。
       这些错误码对应Nginx自身提供的大部分方法来说都是通用的。
