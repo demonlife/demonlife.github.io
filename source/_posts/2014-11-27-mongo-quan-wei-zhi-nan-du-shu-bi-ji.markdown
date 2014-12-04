@@ -80,7 +80,26 @@ categories:
 </ul></li>
 </ul>
 </li>
-<li><a href="#sec-5">5 索引</a></li>
+<li><a href="#sec-5">5 索引</a>
+<ul>
+<li><a href="#sec-5-1">5.1 使用覆盖索引</a></li>
+<li><a href="#sec-5-2">5.2 隐式索引</a></li>
+<li><a href="#sec-5-3">5.3 索引的使用</a></li>
+<li><a href="#sec-5-4">5.4 索引对象和数组(P96)</a>
+<ul>
+<li><a href="#sec-5-4-1">5.4.1 索引数组</a></li>
+</ul>
+</li>
+<li><a href="#sec-5-5">5.5 explain 命令返回值的解释</a></li>
+<li><a href="#sec-5-6">5.6 索引类型</a></li>
+</ul>
+</li>
+<li><a href="#sec-6">6 特殊的索引和集合</a>
+<ul>
+<li><a href="#sec-6-1">6.1 固定集合</a></li>
+<li><a href="#sec-6-2">6.2 TTL 索引</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -299,7 +318,15 @@ show collections =&gt; db.getCollectionNames()
 
 <p>
    在服务器运行mongod时，通过指定&ndash;noscripting可以关闭js的执行
+   在shell中关闭mongodb：
 </p>
+
+
+<pre class="example">use admin
+db.shutdownServer()
+</pre>
+
+
 </div>
 
 <div id="outline-container-2-5-1" class="outline-4">
@@ -957,6 +984,137 @@ db.blog.find({"comments":{"$elemMatch":{"author":"joe", "score":{"$gte":5}}}})
 <h2 id="sec-5">索引</h2>
 <div class="outline-text-2" id="text-5">
 
-<p>  db.user.find({username:"user1"}).explain()
+<p>  db.user.find({username:"user1"}).explain() # 分析查询语句
+  db.user.find({username:"user1"}).explain().hint({"age:1"}) #建议使用{age:1}索引进行分析
+  db.user.ensureIndex({"key":1}) # 建立索引， 如果索引建立的很慢，可以在另一个shell运行: 
+  db.user.ensureIndex({"key":1, "ke2":-1}) # 建立复合索引
+  db.currentOp()或者检查mongod的日志来查看索引创建的进度。
+  mongodb限制每个集合上最多只有64个索引。
+  如果查询的结果集超过32MB，排序时mongodb就会出错。
+  在实际应用中，{"sortkey":1, "queryCriteria":1}类型的索引通常是很有用的。
+  相互反转的索引是等价的，例如： {"age":1} &lt;=&gt; {"age":-1}, 
+  {"age":1, "name":-1} &lt;=&gt;{"age":-1, "name":1}
+</p>
+</div>
+
+<div id="outline-container-5-1" class="outline-3">
+<h3 id="sec-5-1">使用覆盖索引</h3>
+<div class="outline-text-3" id="text-5-1">
+
+<p>   当一个索引包含用户请求的所有字段，可以认为这个索引覆盖了本次查询。在实际中应该优先使用覆盖索引。
+   如果在一个含有数组的字段上做索引，这个索引永远无法覆盖查询，即便将数组字段从需要返回的字段中
+   剔除，也无法使用覆盖索引。
 </p></div>
+
+</div>
+
+<div id="outline-container-5-2" class="outline-3">
+<h3 id="sec-5-2">隐式索引</h3>
+<div class="outline-text-3" id="text-5-2">
+
+<p>   如果拥有一个N个键的索引，那么就同时"免费"得到了所有这N个键的前缀组成的索引。
+</p></div>
+
+</div>
+
+<div id="outline-container-5-3" class="outline-3">
+<h3 id="sec-5-3">索引的使用</h3>
+<div class="outline-text-3" id="text-5-3">
+
+<p>   应该尽可能的让索引是右平衡的。"<sub>id</sub>"索引就是典型的右平衡索引。
+   如果应用程序需要使用数据的机会多于较老的数据，那么mongodb只需要在内存中保留这棵树最右侧的分支(最近的数据)，
+   而不必将整棵树留在内存中。
+   在索引中，不存在的字段和null字段的存储方式是一样的，查询必须遍历每一个文档检查这个值是否真的为null还是
+   根本不存在。如果使用稀疏索引，就不能使用{"$exists":true},也不能使用{"$exists":false}
+   $or可以对每个字句都使用索引。应该尽可能的使用$in代替$or.
+</p></div>
+
+</div>
+
+<div id="outline-container-5-4" class="outline-3">
+<h3 id="sec-5-4">索引对象和数组(P96)</h3>
+<div class="outline-text-3" id="text-5-4">
+
+<p>   mongodb允许深入文档内部，对嵌套字段和数组建立索引。嵌套对象和数组字段可以与复合索引中的顶级字段一起使用。
+   对嵌套文档本身建立索引与对嵌套文档的某个字段建立索引是不同的。
+   db.users.ensureIndex({"loc.city":1})
+   <b>db.users.find({"loc":{"ip":"xxx", "city":"xx", "state":"xx"}})， 查询优化器才会使用loc上的索引。    无法对db.users.find({"loc.city":"xx"})的查询使用索引。 通过实验发现结果与这条测试相反。</b>
+</p>
+</div>
+
+<div id="outline-container-5-4-1" class="outline-4">
+<h4 id="sec-5-4-1">索引数组</h4>
+<div class="outline-text-4" id="text-5-4-1">
+
+<p>    对数组建立的索引并不包含任何位置信息，无法使用数组索引查找特定位置的数组元素。
+</p></div>
+</div>
+
+</div>
+
+<div id="outline-container-5-5" class="outline-3">
+<h3 id="sec-5-5">explain 命令返回值的解释</h3>
+<div class="outline-text-3" id="text-5-5">
+
+
+
+
+<pre class="example">"cursor": 本次查询使用的索引名，如果是BasiciCursor, 表示未使用索引
+"isMultike": 本次查询是否使用了多建索引
+"n":xx 本次查询返回的文档数量
+"nscannedObjects":xx mongodb按索引指针去磁盘上查找实际文档的次数。
+"nscanned":xx 如果有使用索引， 那么该数字就是查找过的索引条目数量。
+"scanAndOrder": 是否在内存中对结果进行排序
+"indexOnly": 是否只使用索引就能完成此次查询
+"nYields": 为了写入请求能够顺利进行，本次查询暂停的次数
+"millis":xx 数据库执行本次查询所耗费的毫秒数
+"indexBounds":xx 描述了索引使用的情况，给出了索引的遍历范围
+</pre>
+
+</div>
+
+</div>
+
+<div id="outline-container-5-6" class="outline-3">
+<h3 id="sec-5-6">索引类型</h3>
+<div class="outline-text-3" id="text-5-6">
+
+<p>   db.user.ensureIndex({"username":1}, {"unique":true}) # 唯一索引
+   db.user.ensureIndex({"username":1}, {"unique":true, "dropDups":true}) # 会删除重复的值，删除第一个
+   db.user.ensureIndex({"username":1}, {"sparse":true}) 
+   db.user.ensureIndex({"a":1}, {"name": "xx"}) # 为创建的索引取一个名字
+   db.user.dropIndex("x<sub>1</sub><sub>y</sub><sub>1</sub>") #删除索引， 索引的名字可以通过db.user.getIndexes()来获取
+</p></div>
+</div>
+
+</div>
+
+<div id="outline-container-6" class="outline-2">
+<h2 id="sec-6">特殊的索引和集合</h2>
+<div class="outline-text-2" id="text-6">
+
+
+</div>
+
+<div id="outline-container-6-1" class="outline-3">
+<h3 id="sec-6-1">固定集合</h3>
+<div class="outline-text-3" id="text-6-1">
+
+<p>   db.createCollectioin("my<sub>collection</sub>", {"capped":true, "size":10000, "max":100}) #创建固定集合，10000字节或100条数据
+   db.runCommand({"convertToCapped":"test", "size":10000}) #将test集合转换为固定集合，但是无法将固定集合转换为非固定集合
+   对固定集合可以进行一种特殊的排序，成为"自然排序", 返回结果集中文档的顺序就是文档在磁盘上的顺序
+   循环游标是一种特殊的游标，只能用在固定集合上，如果超过10分钟没有新结果，循环游标会被释放。
+</p></div>
+
+</div>
+
+<div id="outline-container-6-2" class="outline-3">
+<h3 id="sec-6-2">TTL 索引</h3>
+<div class="outline-text-3" id="text-6-2">
+
+<p>   该索引允许为每一个文档设置一个超时时间，一个文档达到预设置的老化程度之后会被删除。
+   db.user.ensureIndex({"lastUpdated":1}, {"expireAfterSecs": 60*60*2}) #
+</p>
+</div>
+</div>
 </div>

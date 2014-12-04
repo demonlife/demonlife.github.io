@@ -1,0 +1,12 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "Yii 框架学习笔记"
+date: 2014-12-03 12:13:56 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+* 命名空间
+  yii\web\Request: 表示对应的类文件是Yii框架文件夹下的web/Request.php文件
+  

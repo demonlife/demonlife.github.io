@@ -506,14 +506,41 @@ categories:
    在索引中，不存在的字段和null字段的存储方式是一样的，查询必须遍历每一个文档检查这个值是否真的为null还是
    根本不存在。如果使用稀疏索引，就不能使用{"$exists":true},也不能使用{"$exists":false}
    $or可以对每个字句都使用索引。应该尽可能的使用$in代替$or.
-** 索引对象和数组
+** 索引对象和数组(P96)
    mongodb允许深入文档内部，对嵌套字段和数组建立索引。嵌套对象和数组字段可以与复合索引中的顶级字段一起使用。
    对嵌套文档本身建立索引与对嵌套文档的某个字段建立索引是不同的。
    db.users.ensureIndex({"loc.city":1})
-   
-   
    *db.users.find({"loc":{"ip":"xxx", "city":"xx", "state":"xx"}})， 查询优化器才会使用loc上的索引。
    无法对db.users.find({"loc.city":"xx"})的查询使用索引。 通过实验发现结果与这条测试相反。*
 *** 索引数组
     对数组建立的索引并不包含任何位置信息，无法使用数组索引查找特定位置的数组元素。
+** explain 命令返回值的解释
+   #+BEGIN_EXAMPLE
+   "cursor": 本次查询使用的索引名，如果是BasiciCursor, 表示未使用索引
+   "isMultike": 本次查询是否使用了多建索引
+   "n":xx 本次查询返回的文档数量
+   "nscannedObjects":xx mongodb按索引指针去磁盘上查找实际文档的次数。
+   "nscanned":xx 如果有使用索引， 那么该数字就是查找过的索引条目数量。
+   "scanAndOrder": 是否在内存中对结果进行排序
+   "indexOnly": 是否只使用索引就能完成此次查询
+   "nYields": 为了写入请求能够顺利进行，本次查询暂停的次数
+   "millis":xx 数据库执行本次查询所耗费的毫秒数
+   "indexBounds":xx 描述了索引使用的情况，给出了索引的遍历范围
+   #+END_EXAMPLE
+** 索引类型
+   db.user.ensureIndex({"username":1}, {"unique":true}) # 唯一索引
+   db.user.ensureIndex({"username":1}, {"unique":true, "dropDups":true}) # 会删除重复的值，删除第一个
+   # 创建稀疏索引， 如果在某个键上创建稀疏索引，则如果某个文档不含有该键，则在使用该键作为查询条件时不是出现在结果集中
+   db.user.ensureIndex({"username":1}, {"sparse":true}) 
+   db.user.ensureIndex({"a":1}, {"name": "xx"}) # 为创建的索引取一个名字
+   db.user.dropIndex("x_1_y_1") #删除索引， 索引的名字可以通过db.user.getIndexes()来获取
+* 特殊的索引和集合
+** 固定集合
+   db.createCollectioin("my_collection", {"capped":true, "size":10000, "max":100}) #创建固定集合，10000字节或100条数据
+   db.runCommand({"convertToCapped":"test", "size":10000}) #将test集合转换为固定集合，但是无法将固定集合转换为非固定集合
+   对固定集合可以进行一种特殊的排序，成为"自然排序", 返回结果集中文档的顺序就是文档在磁盘上的顺序
+   循环游标是一种特殊的游标，只能用在固定集合上，如果超过10分钟没有新结果，循环游标会被释放。
+** TTL 索引
+   该索引允许为每一个文档设置一个超时时间，一个文档达到预设置的老化程度之后会被删除。
+   db.user.ensureIndex({"lastUpdated":1}, {"expireAfterSecs": 60*60*2}) #
    
