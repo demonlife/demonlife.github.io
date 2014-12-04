@@ -86,6 +86,7 @@ categories:
 <li><a href="#sec-5-2">5.2 隐式索引</a></li>
 <li><a href="#sec-5-3">5.3 索引的使用</a></li>
 <li><a href="#sec-5-4">5.4 索引对象和数组(P96)</a>
+<li><a href="#sec-5-4">5.4 索引对象和数组</a>
 <ul>
 <li><a href="#sec-5-4-1">5.4.1 索引数组</a></li>
 </ul>
@@ -1085,6 +1086,46 @@ db.blog.find({"comments":{"$elemMatch":{"author":"joe", "score":{"$gte":5}}}})
    db.user.ensureIndex({"a":1}, {"name": "xx"}) # 为创建的索引取一个名字
    db.user.dropIndex("x<sub>1</sub><sub>y</sub><sub>1</sub>") #删除索引， 索引的名字可以通过db.user.getIndexes()来获取
 </p></div>
+
+</div>
+
+<div id="outline-container-5-3" class="outline-3">
+<h3 id="sec-5-3">索引的使用</h3>
+<div class="outline-text-3" id="text-5-3">
+
+<p>   应该尽可能的让索引是右平衡的。"<sub>id</sub>"索引就是典型的右平衡索引。
+   如果应用程序需要使用数据的机会多于较老的数据，那么mongodb只需要在内存中保留这棵树最右侧的分支(最近的数据)，
+   而不必将整棵树留在内存中。
+   在索引中，不存在的字段和null字段的存储方式是一样的，查询必须遍历每一个文档检查这个值是否真的为null还是
+   根本不存在。如果使用稀疏索引，就不能使用{"$exists":true},也不能使用{"$exists":false}
+   $or可以对每个字句都使用索引。应该尽可能的使用$in代替$or.
+</p></div>
+
+</div>
+
+<div id="outline-container-5-4" class="outline-3">
+<h3 id="sec-5-4">索引对象和数组</h3>
+<div class="outline-text-3" id="text-5-4">
+
+<p>   mongodb允许深入文档内部，对嵌套字段和数组建立索引。嵌套对象和数组字段可以与复合索引中的顶级字段一起使用。
+   对嵌套文档本身建立索引与对嵌套文档的某个字段建立索引是不同的。
+   db.users.ensureIndex({"loc.city":1})
+</p>
+
+<p>   
+   <b>db.users.find({"loc":{"ip":"xxx", "city":"xx", "state":"xx"}})， 查询优化器才会使用loc上的索引。    无法对db.users.find({"loc.city":"xx"})的查询使用索引。 通过实验发现结果与这条测试相反。</b>
+</p>
+</div>
+
+<div id="outline-container-5-4-1" class="outline-4">
+<h4 id="sec-5-4-1">索引数组</h4>
+<div class="outline-text-4" id="text-5-4-1">
+
+<p>    对数组建立的索引并不包含任何位置信息，无法使用数组索引查找特定位置的数组元素。
+</p>
+</div>
+</div>
+</div>
 </div>
 
 </div>
