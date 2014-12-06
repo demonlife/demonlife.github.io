@@ -1,0 +1,38 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "nginx模块开发与架构解析之访问第三方服务"
+date: 2014-12-05 08:48:35 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 简介
+  当需要访问第三方服务时，nginx提供了两种全异步方式来与第三方服务器通信：
+  upstream与subrequest。upstream可以保证在与第三方服务器交互时(包括三次握手建立
+  tcp连接，发送请求， 接受响应，四次握手关闭tcp连接等)不会阻塞Nginx进程处理其他请求。
+  在开发http模块时，如果需要访问第三方服务是不能自己简单的用套接字编程实现的，这样
+  会破坏nginx优秀的全异步架构。subrequest只是分解复杂请求的一种设计模式，本质上
+  与访问第三方服务没有任何关系。subrequest访问第三方服务最终也是基于upstream实现的。
+* upstream的使用方式
+  upstream提供了8个回调方法，用于只需要视自己的需要实现其中几个回调方法就可以了。
+  - upstream嵌入到一个请求中的步骤
+    模块在处理任何一个请求时都有ngx_http_request_t结构对象r, 而r中有一个
+    ngx_http_upstream_t类型的成员upstream。因此只要设置r->upstream成员即可。
+** ngx\_http\_upstream\_t
+   # file:../code/nginx-1.6.2.source/src/http/ngx_http.h::17 ngx_http_upstream_t
+   # file:../code/nginx-1.6.2.source/src/http/ngx_http_upstream.h::272 ngx_http_upstream_s
+   - upstream有3中处理上游响应包体的方式
+     当请求的ngx_http_request_t结构体中subrequest_in_memory标志为1，将采用upstream不转发
+     响应包体到下游，由http模块实现的input_filter方法处理包体。当subrequest_in_memory为0时
+     upstream会转发响应包体，当ngx_http_upstream_conf_t配置结构体中的buffering为1时，将开启
+     更多的内存和磁盘文件用于缓存上游的响应包体，即上游网速更快。当buffering为0时，将使用固定
+     大小的缓冲区来转发响应包体。
+** 设置upstream的限制性参数
+   ngx_http_upstream_t中的conf成员，用于设置upstream模块处理请求时的参数。包括连接，发送，
+   接受的超时时间等。
+   # file:../code/nginx-1.6.2.source/src/http/ngx_http_upstream.h::131 ngx_http_upstream_conf_t
+   nginx.conf文件中提供的配置项大都是用来设置ngx_http_upstream_conf_t结构体中的成员的。
+   使用前面介绍的14个预设方法可以非常简单地通过nginx.conf配置文件设置ngx_http_upstream_conf_t
+   结构体。例如，可以将ngx_http_upstream_conf_t类型的变量放到ngx_http_mytest_conf_t结构体中
