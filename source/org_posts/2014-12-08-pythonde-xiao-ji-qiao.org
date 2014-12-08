@@ -36,3 +36,26 @@ categories:
 * 常用模块
   os: 含有对文件的一些操作。
   sys:  
+* 内置函数
+  Python是将复杂的数据结构隐藏在内置函数中，用C语言来实现
+** filter
+   相当于一个迭代器，调用一个布尔函数func来迭代seq中的每个元素，
+   返回一个是bool_seq返回为True的序列
+   参数说明:
+   如果第一个参数为function,那么返回条件为真的序列(列表，元祖或字符串),
+   如果第一个参数为None的话,那么返回序列中所有为True的项目
+   #+BEGIN_SRC python
+   print filter(None, [-2, 0, 2, '', {}, ()]) #输出[-2, 2]
+   print filter(lambda x: x!='a', 'abcd') #输出bcd
+   #+END_SRC
+** map
+   对一个及多个序列执行同一个操作，返回列表
+   说明：
+   返回一个列表，该列表是参数func对seq1， seq2处理的结果
+   可以有多个序列，如果函数为None的话，返回一个序列的列表
+   #+BEGIN_SRC python
+   map(lambda x: x+1, [1,2,3,4]) #[2,3,4,5]
+   map(None, [1, 2, 3, 4], (1, 2)) #[(1,1), (2, 2), (3, None), (4, None)]
+   #+END_SRC
+** reduce
+   
