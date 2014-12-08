@@ -1,0 +1,14 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "Python的GIL"
+date: 2014-12-08 13:42:00 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 例子
+  #+BEGIN_SRC python
+  
+  #+END_SRC

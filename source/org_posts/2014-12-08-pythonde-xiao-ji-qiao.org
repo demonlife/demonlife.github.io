@@ -34,8 +34,14 @@ categories:
   print a.start, a.stop, a.step
   #+END_SRC
 * 常用模块
-  os: 含有对文件的一些操作。
+  os: 含有对文件的一些操作。也可以使用shutil
   sys:  
+** glob
+   glob模块可以用通配符的方式搜索某个目录下的特定文件，返回结果是一个list
+   #+BEGIN_SRC python
+   import glob
+   flist = glob.glob('*.jpg')
+   #+END_SRC
 * 内置函数
   Python是将复杂的数据结构隐藏在内置函数中，用C语言来实现
 ** filter
@@ -58,4 +64,14 @@ categories:
    map(None, [1, 2, 3, 4], (1, 2)) #[(1,1), (2, 2), (3, None), (4, None)]
    #+END_SRC
 ** reduce
-   
+* 进制之间的转换
+** 其他进制转十进制
+   #+BEGIN_SRC python
+   int('110', 2) # 将二进制转换为十进制
+   int('04', 8) # 将八进制转换为十进制
+   int('0x4', 16) # 将16进制转换为十进制
+   #+END_SRC
+** 十进制转其他进制
+   bin(): 将十进制转换为二进制
+   oct(): 将十进制转换为二进制
+   hex(): 将十进制转换为十六进制

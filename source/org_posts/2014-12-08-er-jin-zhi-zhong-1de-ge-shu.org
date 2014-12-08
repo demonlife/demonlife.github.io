@@ -1,0 +1,71 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "二进制中1的个数"
+date: 2014-12-08 14:10:44 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 二进制中1的个数
+  详细讲解: http://github.tiankonguse.com/blog/2014/11/16/bit-count-more/
+  假设是32位无符号整数
+  算法1:
+  #+BEGIN_SRC c
+  unsigned countbits(unsigend x) {
+      unsigned n = 0;
+      while(n+=(x&1), x >>= 1);
+      return n;
+  }
+  #+END_SRC
+  算法2:
+  原理是x & (x - 1)可以把x的最低位1置换成0
+  #+BEGIN_SRC c
+  unsigned countbits(unsigned x) {
+      unsigned n = 0;
+      while(x && (++n, x &= x - 1));
+      return n;
+  }
+  #+END_SRC
+  算法3: 分治法
+  思路:
+  首先将32位数看成相互独立的32个 0-1 数字. 
+  然后两两相加, 这样我们就有16个数字了. 
+  然后再两两相加, 就变成8个数字了, 接着再两两相加变成4个, 然后两个, 最后一个数字. 
+  由于是32位数字的和, 所以答案刚好就是1的个数啦
+  #+BEGIN_SRC c
+  // 该段程序只对32位有效
+  unsigned countbits(unsigned x) {
+      unsigned mask[] = {0x55555555, 0x33333333, 0x0F0F0F0F,
+                         0x00FF00FF, 0x0000FFFF};
+      for(unsigned i=0, j=1; i < 5; ++i, j <<= 1) {
+          x = (x & mask[i]) + ((x>>j) & mask[i]);
+      }
+      return x;
+  }
+  #+END_SRC
+  算法4: 打表法
+  #+BEGIN_SRC c
+  const int OneNumMax = 1 << 16;
+  int OneNum[OneNumMax];
+  int init() {
+      int i = 0;
+      for(i = 1; i < OneNumMax; ++i) {
+          OneNum[i] = OneNum[i >> 1] + (i & 1);
+      }
+      return 0;
+  }
+
+  unsigned countbits(unsigned x) {
+      static int a = init();
+      return OneNum[x >> 16] + OneNum[x & ((1<<16) - 1)];
+  }
+  #+END_SRC
+  算法5:
+  #+BEGIN_SRC c
+  int bitCount ( unsigned n ) {
+      unsigned tmp = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
+      return ( (tmp + (tmp >> 3) ) & 030707070707) % 63;
+  }
+  #+END_SRC
