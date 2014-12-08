@@ -1,0 +1,38 @@
+#+BEGIN_HTML
+---
+layout: post
+title: "python的小技巧"
+date: 2014-12-08 08:16:49 +0800
+comments: true
+categories: 
+---
+#+END_HTML
+
+* 分解序列
+  #+BEGIN_SRC python
+  p = (4, 5)
+  x, y = p
+   
+  data = ['acme', 50, 91.1, (2012, 12, 11)]
+  name, shares, price, date = data
+   
+  s = 'hello'
+  a, b, c, c, e = s
+   
+  data = ['acme', 50, 91.1, (2012, 12, 11)]
+  _, shares, price, _ = data #忽略第一个和最后一个
+   
+  first, *middle, last = data #middle 存储除第一个和最后一个的数据
+  name, *_, last = data, #只取第一个和最后一个，其他的丢弃
+  #+END_SRC
+* 命名切片
+  使用内置的slice()函数创建有一个切片对象。
+  #+BEGIN_SRC python
+  items = [0, 1, 2, 3]
+  a = slice(2, 4)
+  # 打印slice对象的信息
+  print a.start, a.stop, a.step
+  #+END_SRC
+* 常用模块
+  os: 含有对文件的一些操作。
+  sys:  
