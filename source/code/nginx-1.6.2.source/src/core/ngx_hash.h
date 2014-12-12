@@ -90,7 +90,10 @@ typedef struct {
 
 
 typedef struct {
+    // ngx_table_elt_t是否可以是某个散列表数据结构中的成员
+    // 可以在ngx_hash_t中更快的找到相同key的ngx_table_elt_t数据
     ngx_uint_t        hash;
+    
     ngx_str_t         key;
     ngx_str_t         value;
     u_char           *lowcase_key;
