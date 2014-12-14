@@ -92,3 +92,13 @@ categories:
    bin(): 将十进制转换为二进制
    oct(): 将十进制转换为二进制
    hex(): 将十进制转换为十六进制
+* python 代码片段
+** 命令行参数处理
+   #+BEGIN_SRC python
+   import argparse
+   def main():
+       parser = argparse.Argumentparser(description='xx')
+       parser.add_argument('--host', action='store', dest='host', required=False, type=str)
+       given_args = parser.parse_args()
+       prnt given_args.host
+   #+END_SRC
