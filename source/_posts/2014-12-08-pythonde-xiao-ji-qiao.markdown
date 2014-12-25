@@ -23,6 +23,8 @@ categories:
 <li><a href="#sec-4-1">4.1 filter</a></li>
 <li><a href="#sec-4-2">4.2 map</a></li>
 <li><a href="#sec-4-3">4.3 reduce</a></li>
+<li><a href="#sec-4-4">4.4 apply</a></li>
+<li><a href="#sec-4-5">4.5 zip</a></li>
 </ul>
 </li>
 <li><a href="#sec-5">5 进制之间的转换</a>
@@ -143,7 +145,38 @@ categories:
 <h3 id="sec-4-3">reduce</h3>
 <div class="outline-text-3" id="text-4-3">
 
+<p>   func为二元函数，将func作用于seq序列的元素，每次携带一对（先前的结果以及下一个序列的元素），
+   连续的将现有的结果和下一个值作用在获得的随后的结果上，最后减少我们的序列为一个单一的返回值：
+   如果初始值init给定，第一个比较会是init和第一个序列元素而不是序列的头两个元素。
+   <b>注意</b>: <b>在Python3.0里面必须导入functools模块,from functools import reduce</b>
+   <b>reduce返回的必然是一个值，可以有初始值.</b>
+   <b>reduce的参数定义格式，reduce(func, seq, init)</b>
+{% codeblock lang:python %}
+   reduce(lambda x,y: x+y, [47,11,42,13])
+{% endcodeblock %}
+</p></div>
+
 </div>
+
+<div id="outline-container-4-4" class="outline-3">
+<h3 id="sec-4-4">apply</h3>
+<div class="outline-text-3" id="text-4-4">
+
+<p>   当一个函数的参数存在于一个元组或者一个字典中时，用来间接的调用这个函数，元组或者字典中的参数按照顺序传递
+</p></div>
+
+</div>
+
+<div id="outline-container-4-5" class="outline-3">
+<h3 id="sec-4-5">zip</h3>
+<div class="outline-text-3" id="text-4-5">
+
+<p>   返回一个元祖列表，该元祖按顺序包含每个序列的相应元素，以最小的一个为准
+{% codeblock lang:python %}
+   zip(range(5),range(1,20,2)) #[(0, 1), (1, 3), (2, 5), (3, 7), (4, 9)]
+   
+{% endcodeblock %}
+</p></div>
 </div>
 
 </div>

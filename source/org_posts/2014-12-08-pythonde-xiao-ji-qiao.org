@@ -64,6 +64,23 @@ categories:
    map(None, [1, 2, 3, 4], (1, 2)) #[(1,1), (2, 2), (3, None), (4, None)]
    #+END_SRC
 ** reduce
+   func为二元函数，将func作用于seq序列的元素，每次携带一对（先前的结果以及下一个序列的元素），
+   连续的将现有的结果和下一个值作用在获得的随后的结果上，最后减少我们的序列为一个单一的返回值：
+   如果初始值init给定，第一个比较会是init和第一个序列元素而不是序列的头两个元素。
+   *注意*: *在Python3.0里面必须导入functools模块,from functools import reduce*
+   *reduce返回的必然是一个值，可以有初始值.*
+   *reduce的参数定义格式，reduce(func, seq, init)*
+   #+BEGIN_SRC python
+   reduce(lambda x,y: x+y, [47,11,42,13])
+   #+END_SRC
+** apply
+   当一个函数的参数存在于一个元组或者一个字典中时，用来间接的调用这个函数，元组或者字典中的参数按照顺序传递
+** zip
+   返回一个元祖列表，该元祖按顺序包含每个序列的相应元素，以最小的一个为准
+   #+BEGIN_SRC python
+   zip(range(5),range(1,20,2)) #[(0, 1), (1, 3), (2, 5), (3, 7), (4, 9)]
+   
+   #+END_SRC
 * 进制之间的转换
 ** 其他进制转十进制
    #+BEGIN_SRC python
@@ -75,3 +92,13 @@ categories:
    bin(): 将十进制转换为二进制
    oct(): 将十进制转换为二进制
    hex(): 将十进制转换为十六进制
+* python 代码片段
+** 命令行参数处理
+   #+BEGIN_SRC python
+   import argparse
+   def main():
+       parser = argparse.Argumentparser(description='xx')
+       parser.add_argument('--host', action='store', dest='host', required=False, type=str)
+       given_args = parser.parse_args()
+       prnt given_args.host
+   #+END_SRC
