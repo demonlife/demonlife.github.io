@@ -13,7 +13,11 @@ categories:
 <ul>
 <li><a href="#sec-1">1 分解序列</a></li>
 <li><a href="#sec-2">2 命名切片</a></li>
-<li><a href="#sec-3">3 常用模块</a></li>
+<li><a href="#sec-3">3 常用模块</a>
+<ul>
+<li><a href="#sec-3-1">3.1 glob</a></li>
+</ul>
+</li>
 <li><a href="#sec-4">4 内置函数</a>
 <ul>
 <li><a href="#sec-4-1">4.1 filter</a></li>
@@ -75,9 +79,22 @@ categories:
 <h2 id="sec-3">常用模块</h2>
 <div class="outline-text-2" id="text-3">
 
-<p>  os: 含有对文件的一些操作。
+<p>  os: 含有对文件的一些操作。也可以使用shutil
   sys:  
+</p>
+</div>
+
+<div id="outline-container-3-1" class="outline-3">
+<h3 id="sec-3-1">glob</h3>
+<div class="outline-text-3" id="text-3-1">
+
+<p>   glob模块可以用通配符的方式搜索某个目录下的特定文件，返回结果是一个list
+{% codeblock lang:python %}
+   import glob
+   flist = glob.glob('*.jpg')
+{% endcodeblock %}
 </p></div>
+</div>
 
 </div>
 

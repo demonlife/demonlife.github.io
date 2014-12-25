@@ -12,6 +12,11 @@ categories:
 <div id="text-table-of-contents">
 <ul>
 <li><a href="#sec-1">1 二分查找</a></li>
+<li><a href="#sec-2">2 排序</a>
+<ul>
+<li><a href="#sec-2-1">2.1 快速排序</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -88,5 +93,25 @@ categories:
         return right;
     }
 {% endcodeblock %}
+</div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2">排序</h2>
+<div class="outline-text-2" id="text-2">
+
+
+</div>
+
+<div id="outline-container-2-1" class="outline-3">
+<h3 id="sec-2-1">快速排序</h3>
+<div class="outline-text-3" id="text-2-1">
+
+<p>   原理:（ <a href="http://github.tiankonguse.com/blog/2014/11/14/qsort/">http://github.tiankonguse.com/blog/2014/11/14/qsort/</a> ）
+   把带排序的序列分成两组, 比如左边和右边两组, 而且右边的任何一个数需要不小于左边的所有数
+   如何对n个数字分组呢？策略就是选择一个比较因子来当做分界线.
+</p>
+</div>
 </div>
 </div>
